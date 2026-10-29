@@ -1,26 +1,204 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Identidade Partiu DPM */
+  --color-molten: #780000;
+  --color-brick: #c1121f;
+  --color-papaya: #fdf0d5;
+  --color-deep: #003049;
+  --color-steel: #669bbc;
+
+  /* Neutros quentes derivados da papaya */
+  --color-canvas: #fbf8f1;
+  --color-shell: #f6efdf;
+  --color-line: #e5dcc8;
+  --color-ink: #132f3e;
+  --color-muted: #506676;
+
+  /* Escala de apoio do azul aço (texto escuro usa 700+) */
+  --color-steel-50: #f2f7fa;
+  --color-steel-100: #e2ecf3;
+  --color-steel-200: #c8dbe8;
+  --color-steel-300: #a9c4d8;
+  --color-steel-400: #8aafc8;
+  --color-steel-500: #669bbc;
+  --color-steel-600: #4a7f9f;
+  --color-steel-700: #2f5f7d;
+  --color-steel-800: #244b63;
+  --color-steel-900: #1b3b4e;
+
+  /* Escala navy: 900 é a cor oficial, 950 um tom de profundidade */
+  --color-navy-50: #eef4f8;
+  --color-navy-100: #d9e7f0;
+  --color-navy-200: #b4cbdc;
+  --color-navy-300: #8aadc6;
+  --color-navy-700: #14506e;
+  --color-navy-800: #0a3a55;
+  --color-navy-900: #003049;
+  --color-navy-950: #00243a;
+
+  /* Aliases históricos mantidos para os componentes existentes */
+  --color-mint-50: #f2f7fa;
+  --color-mint-100: #e2ecf3;
+  --color-mint-200: #c8dbe8;
+  --color-mint-300: #a9c4d8;
+  --color-mint-400: #669bbc;
+  --color-mint-500: #5590b3;
+  --color-mint-600: #3d7292;
+  --color-mint-700: #2f5f7d;
+
+  --color-ember-50: #fbeced;
+  --color-ember-100: #f7d7d9;
+  --color-ember-200: #efb3b7;
+  --color-ember-300: #e58a90;
+  --color-ember-400: #d63a45;
+  --color-ember-500: #c1121f;
+  --color-ember-600: #a30f1a;
+  --color-ember-700: #780000;
+
+  --color-paper: #fdf0d5;
+
+  --shadow-suave:
+    0 1px 2px rgb(0 48 73 / 0.05), 0 10px 30px -18px rgb(0 48 73 / 0.28);
+  --shadow-elevada:
+    0 1px 2px rgb(0 48 73 / 0.06), 0 18px 45px -24px rgb(0 48 73 / 0.38);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--color-deep);
+  }
+
+  ::selection {
+    background-color: var(--color-brick);
+    color: #ffffff;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Grade escura para fundos claros. */
+.bg-grid {
+  background-image:
+    linear-gradient(
+      to right,
+      rgb(0 48 73 / 0.055) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgb(0 48 73 / 0.055) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+/* Grade clara para fundos navy. */
+.bg-grid-clara {
+  background-image:
+    linear-gradient(
+      to right,
+      rgb(253 240 213 / 0.07) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgb(253 240 213 / 0.07) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+.bg-grid-fina {
+  background-image:
+    linear-gradient(
+      to right,
+      rgb(253 240 213 / 0.06) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgb(253 240 213 / 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Tema escolhido em cada evento: a paleta é sempre fornecida pelo catálogo
+   controlado em lib/tema-evento, evitando cores arbitrárias e baixo contraste. */
+.tema-evento .tema-cabecalho {
+  background:
+    radial-gradient(circle at 82% 0%, color-mix(in srgb, var(--tema-primaria) 20%, transparent), transparent 32rem),
+    var(--tema-fundo);
+  border-color: color-mix(in srgb, var(--tema-primaria) 22%, transparent);
+}
+
+.tema-evento .tema-cartao {
+  border-color: color-mix(in srgb, var(--tema-primaria) 22%, #ffffff);
+}
+
+.tema-evento .tema-marcador,
+.tema-evento .tema-progresso {
+  background-color: var(--tema-primaria);
+}
+
+.tema-evento .tema-icone {
+  background-color: var(--tema-suave);
+  color: var(--tema-escura);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tema-primaria) 22%, transparent);
+}
+
+.tema-evento .tema-faixa {
+  background-image: linear-gradient(to right, var(--tema-escura), var(--tema-primaria), var(--tema-escura));
+}
+
+.tema-evento .tema-check,
+.tema-evento .tema-cabecalho .text-steel-700 {
+  color: var(--tema-primaria);
+}
+
+.tema-evento .tema-inscricao button[type="submit"]:not(:disabled) {
+  background-color: var(--tema-escura);
+  border-color: var(--tema-escura);
+  color: #ffffff;
+}
+
+.tema-evento .tema-inscricao button[type="submit"]:not(:disabled):hover {
+  background-color: var(--tema-primaria);
+  border-color: var(--tema-primaria);
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
