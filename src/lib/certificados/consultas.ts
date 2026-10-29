@@ -18,6 +18,27 @@ export type CertificadoValidado = {
   local: string | null;
 };
 
+/**
+ * Converte o período do evento em uma carga horária apropriada para constar
+ * no certificado. A duração é calculada no servidor, portanto não depende do
+ * fuso horário ou do relógio de quem está baixando o arquivo.
+ */
+export function obterCargaHorariaEmHoras(
+  inicio: string | null,
+  fim: string | null,
+): string | null {
+  if (!inicio || !fim) return null;
+
+  const inicioMs = new Date(inicio).getTime();
+  const fimMs = new Date(fim).getTime();
+  if (!Number.isFinite(inicioMs) || !Number.isFinite(fimMs) || fimMs < inicioMs) {
+    return null;
+  }
+
+  const horas = Math.round(((fimMs - inicioMs) / 3_600_000) * 100) / 100;
+  return horas.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}
+
 export async function validarCertificado(
   codigo: string,
 ): Promise<CertificadoValidado | null> {

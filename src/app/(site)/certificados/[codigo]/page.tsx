@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -116,7 +117,7 @@ async function CertificadoConteudo({
 
       <main className="flex-1 bg-canvas py-10 sm:py-14 print:bg-white print:py-0">
         <Container>
-          <div className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-deep/10 bg-white shadow-suave print:border-0 print:shadow-none">
+          <div className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-deep/10 bg-white shadow-suave print:hidden">
             <div className="h-1.5 bg-gradient-to-r from-brick via-brick to-steel print:hidden" />
 
             <div className="p-6 sm:p-10">
@@ -227,6 +228,17 @@ async function CertificadoConteudo({
             >
               Minha área
             </Link>
+          </div>
+
+          <div className="hidden print:block">
+            <Image
+              src={`/api/certificados/${certificado.codigo}/imagem`}
+              alt={`Certificado de ${certificado.participante}`}
+              width={2000}
+              height={1414}
+              unoptimized
+              className="h-auto w-full"
+            />
           </div>
         </Container>
       </main>

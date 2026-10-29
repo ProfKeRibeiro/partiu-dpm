@@ -294,6 +294,10 @@ docs/
 - `/certificados/[codigo]` valida via `validar_certificado(uuid)` e exibe apenas
   nome, evento, data, modalidade e local; certificados cancelados não são
   exibidos.
+- `/api/certificados/[codigo]/imagem` gera o PNG pronto para impressão a partir
+  de `assets/certificado_partiu-dpm.png`, preenchendo nome, evento, data,
+  carga horária calculada e data de emissão. A rota só responde para
+  certificados emitidos e válidos.
 - A página tem versão de impressão.
 
 ## Segurança

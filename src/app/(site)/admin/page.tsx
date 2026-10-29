@@ -113,9 +113,14 @@ export default async function AdminPage() {
               </p>
             </div>
 
-            <ButtonLink href="/conta" variante="contorno" tamanho="sm">
-              Minha área
-            </ButtonLink>
+            <div className="flex flex-wrap gap-2">
+              <ButtonLink href="/admin/presencas" tamanho="sm">
+                Confirmar presenças
+              </ButtonLink>
+              <ButtonLink href="/conta" variante="contorno" tamanho="sm">
+                Minha área
+              </ButtonLink>
+            </div>
           </div>
         </Container>
       </header>

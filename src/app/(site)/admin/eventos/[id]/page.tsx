@@ -301,7 +301,10 @@ async function AdminEventoConteudo({
             </div>
           </section>
 
-          <section className="mt-8 overflow-hidden rounded-2xl border border-deep/10 bg-white shadow-sm">
+          <section
+            id="presencas"
+            className="mt-8 scroll-mt-6 overflow-hidden rounded-2xl border border-deep/10 bg-white shadow-sm"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
               <h2 className="font-display text-lg font-semibold tracking-tight text-deep">
                 Inscritos
