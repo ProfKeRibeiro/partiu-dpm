@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import sharp from "sharp";
+import { ImageResponse } from "next/og";
+import { createElement } from "react";
 import {
   obterCargaHorariaEmHoras,
   validarCertificado,
@@ -12,14 +13,12 @@ const MODELO_CERTIFICADO = path.join(
   "certificado_partiu-dpm.png",
 );
 
-function escaparSvg(texto: string) {
-  return texto
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
+// A fonte é distribuída junto com o próprio Next e é passada explicitamente
+// ao gerador de imagem. Assim o certificado não depende das fontes instaladas
+// na máquina/servidor que o estiver gerando.
+const FONTE_CERTIFICADO = require.resolve(
+  "next/dist/compiled/@vercel/og/Geist-Regular.ttf",
+);
 
 function limitar(texto: string, maximo: number) {
   return texto.length > maximo ? `${texto.slice(0, maximo - 1).trimEnd()}…` : texto;
@@ -64,26 +63,70 @@ function textoDoCertificado(dados: {
   };
 }
 
-function criarSobreposicaoSvg(dados: ReturnType<typeof textoDoCertificado>) {
-  const participante = escaparSvg(dados.participante);
-  const evento = escaparSvg(dados.evento);
-  const dataEvento = escaparSvg(dados.dataEvento);
-  const cargaHoraria = escaparSvg(dados.cargaHoraria);
-  const dataEmissao = escaparSvg(`Itapetininga, ${dados.dataEmissao}`);
+function criarImagem(
+  modelo: Buffer,
+  dados: ReturnType<typeof textoDoCertificado>,
+  fonte: Buffer,
+) {
+  const camada = {
+    position: "absolute" as const,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center" as const,
+    color: "#062d47",
+    fontFamily: "Certificado",
+  };
 
-  return Buffer.from(`
-    <svg width="2000" height="1414" viewBox="0 0 2000 1414" xmlns="http://www.w3.org/2000/svg">
-      <style>
-        .serif { font-family: Georgia, 'Times New Roman', serif; fill: #062d47; }
-      </style>
-      <text x="1000" y="667" text-anchor="middle" class="serif" font-size="${tamanhoDaFonte(dados.participante, 54, 34)}" font-weight="700">${participante}</text>
-      <text x="1000" y="798" text-anchor="middle" class="serif" font-size="${tamanhoDaFonte(dados.evento, 44, 26)}" font-weight="700">${evento}</text>
-      <text x="710" y="914" text-anchor="middle" class="serif" font-size="34">${dataEvento}</text>
-      <text x="1450" y="914" text-anchor="middle" class="serif" font-size="38" font-weight="700">${cargaHoraria}</text>
-      <rect x="585" y="965" width="810" height="66" rx="4" fill="#f9f7ef" fill-opacity="0.94"/>
-      <text x="990" y="1010" text-anchor="middle" class="serif" font-size="29">${dataEmissao}</text>
-    </svg>
-  `);
+  return new ImageResponse(
+    createElement(
+      "div",
+      {
+        style: {
+          position: "relative",
+          display: "flex",
+          width: "2000px",
+          height: "1414px",
+        },
+      },
+      createElement("img", {
+        src: `data:image/png;base64,${modelo.toString("base64")}`,
+        width: 2000,
+        height: 1414,
+        style: { position: "absolute", inset: 0 },
+      }),
+      createElement(
+        "div",
+        { style: { ...camada, left: "300px", top: "610px", width: "1400px", height: "80px", fontSize: `${tamanhoDaFonte(dados.participante, 54, 34)}px`, fontWeight: 700 } },
+        dados.participante,
+      ),
+      createElement(
+        "div",
+        { style: { ...camada, left: "280px", top: "743px", width: "1440px", height: "70px", fontSize: `${tamanhoDaFonte(dados.evento, 44, 26)}px`, fontWeight: 700 } },
+        dados.evento,
+      ),
+      createElement(
+        "div",
+        { style: { ...camada, left: "400px", top: "865px", width: "620px", height: "70px", fontSize: "34px" } },
+        dados.dataEvento,
+      ),
+      createElement(
+        "div",
+        { style: { ...camada, left: "1330px", top: "865px", width: "240px", height: "70px", fontSize: "38px", fontWeight: 700 } },
+        dados.cargaHoraria,
+      ),
+      createElement(
+        "div",
+        { style: { ...camada, left: "585px", top: "965px", width: "810px", height: "66px", backgroundColor: "#f9f7ef", fontSize: "29px" } },
+        `Itapetininga, ${dados.dataEmissao}`,
+      ),
+    ),
+    {
+      width: 2000,
+      height: 1414,
+      fonts: [{ name: "Certificado", data: fonte, weight: 400, style: "normal" }],
+    },
+  );
 }
 
 /** PNG público para certificados emitidos. Certificados cancelados ou inválidos
@@ -100,27 +143,19 @@ export async function GET(
   }
 
   try {
-    const modelo = await readFile(MODELO_CERTIFICADO);
+    const [modelo, fonte] = await Promise.all([
+      readFile(MODELO_CERTIFICADO),
+      readFile(FONTE_CERTIFICADO),
+    ]);
     if (modelo.length === 0) throw new Error("Modelo de certificado vazio.");
 
-    const imagem = await sharp(modelo)
-      .composite([
-        {
-          input: criarSobreposicaoSvg(textoDoCertificado(certificado)),
-          top: 0,
-          left: 0,
-        },
-      ])
-      .png()
-      .toBuffer();
-
-    return new Response(imagem, {
-      headers: {
-        "Content-Type": "image/png",
-        "Content-Disposition": `inline; filename="certificado-${codigo}.png"`,
-        "Cache-Control": "private, no-store",
-      },
-    });
+    const resposta = criarImagem(modelo, textoDoCertificado(certificado), fonte);
+    resposta.headers.set(
+      "Content-Disposition",
+      `inline; filename="certificado-${codigo}.png"`,
+    );
+    resposta.headers.set("Cache-Control", "private, no-store");
+    return resposta;
   } catch (erro) {
     console.error("[partiu-dpm] Falha ao gerar a imagem do certificado.", erro);
     return new Response("Não foi possível gerar o certificado.", { status: 500 });
