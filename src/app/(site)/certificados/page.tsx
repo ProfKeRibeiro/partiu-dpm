@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ConsultaCertificado } from "@/components/certificados/consulta-certificado";
+import { LeitorQrCode } from "@/components/certificados/leitor-qr";
 import { Container } from "@/components/ui/container";
 import { IconeCertificado, IconeEscudo } from "@/components/ui/icons";
 
@@ -66,10 +67,23 @@ export default function CertificadosPage() {
 
               <ConsultaCertificado />
 
+              <div
+                className="my-5 flex items-center gap-3 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-muted"
+                aria-hidden="true"
+              >
+                <span className="h-px flex-1 bg-line" />
+                ou aponte a câmera
+                <span className="h-px flex-1 bg-line" />
+              </div>
+
+              <LeitorQrCode />
+
               <p className="mt-6 flex items-start gap-2 rounded-xl border border-line bg-canvas px-4 py-3 text-xs leading-relaxed text-muted">
                 <IconeEscudo className="mt-0.5 h-4 w-4 shrink-0 text-steel-700" />
-                A consulta é pública e mostra apenas nome, evento e data de
-                emissão. Nenhum dado de contato é exibido.
+                A validação aceita o código digitado ou o QR code impresso no
+                canto inferior esquerdo do certificado. A consulta é pública e
+                mostra apenas nome, evento e data de emissão. Nenhum dado de
+                contato é exibido.
               </p>
             </div>
           </div>

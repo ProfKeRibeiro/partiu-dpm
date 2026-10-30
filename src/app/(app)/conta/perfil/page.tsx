@@ -59,7 +59,7 @@ async function Perfil() {
     usuarioEhAdmin(),
   ]);
 
-  const nome = perfil?.nome_completo ?? usuario.email ?? "Participante";
+  const nome = perfil?.nome_completo ?? usuario.nome ?? "Participante";
   const categoria = rotuloCategoria(perfil?.categoria);
 
   return (

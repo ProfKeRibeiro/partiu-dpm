@@ -1,6 +1,6 @@
 # Contrato do banco de dados
 
-> **Status: confirmado e endurecido em 27/10/2026.**
+> **Status: confirmado e endurecido em 27/10/2026; revisto em 30/10/2026.**
 >
 > Migrações aplicadas:
 >
@@ -9,24 +9,28 @@
 > 3. `admin_presencas_certificados_e_link`
 > 4. `atualizar_perfil_participante_rpc`
 > 5. `indices_chaves_estrangeiras`
+> 6. `admin_obter_evento` (30/10/2026 — leitura de `link_evento` na edição)
 >
-> Migração preparada, ainda pendente de aplicação no Supabase: `docs/migracoes/20261029_publico_alvo_eventos.sql`.
-> Ela adiciona os públicos detalhados e aplica a elegibilidade no banco.
+> Migrações preparadas, ainda pendentes de aplicação no Supabase:
+> `docs/migracoes/20261029_publico_alvo_eventos.sql` (públicos detalhados +
+> elegibilidade no banco) e `docs/migracoes/20261029_cor-tema-evento.sql`
+> (coluna `cor_tema`).
 >
-> O banco está **sem eventos cadastrados**: `eventos`, `participantes`,
-> `inscricoes`, `presencas` e `certificados` têm 0 linhas. `administradores`
-> tem 1 linha e `auth.users` tem 1 usuário (o admin real). Os dados temporários
-> dos testes de integração foram removidos ao final.
+> O banco agora tem **dados reais de teste da organização**: 1 evento
+> (`MongoDB Day`, online), 2 participantes, 2 inscrições confirmadas,
+> 2 presenças e 2 certificados (1 emitido, 1 cancelado). `administradores`
+> tem 1 linha (o admin real). Os dados temporários usados nos testes de
+> integração foram removidos ao final.
 
 ## Resumo das tabelas
 
 | Tabela | Linhas | RLS | Observação |
 | --- | ---: | --- | --- |
-| `public.eventos` | 0 | Ativa | Agenda, detalhes e contador `inscritos`. |
-| `public.participantes` | 0 | Ativa | Perfil 1:1 com `auth.users`. |
-| `public.inscricoes` | 0 | Ativa | Inscrição única por evento/participante. |
-| `public.presencas` | 0 | Ativa | Uma presença por inscrição. |
-| `public.certificados` | 0 | Ativa | Um certificado por inscrição. |
+| `public.eventos` | 1 | Ativa | Agenda, detalhes e contador `inscritos`. |
+| `public.participantes` | 2 | Ativa | Perfil 1:1 com `auth.users`. |
+| `public.inscricoes` | 2 | Ativa | Inscrição única por evento/participante. |
+| `public.presencas` | 2 | Ativa | Uma presença por inscrição. |
+| `public.certificados` | 2 | Ativa | Um certificado por inscrição (1 emitido, 1 cancelado). |
 | `public.administradores` | 1 | Ativa | Fonte de verdade de `eh_admin()`. |
 
 RLS ativa nas seis tabelas, sem `FORCE ROW LEVEL SECURITY`. O dono e
@@ -374,6 +378,18 @@ RPC `STABLE SECURITY DEFINER`, `search_path = ''`, retorna `jsonb`.
   `local_evento`.
 - Certificado inexistente ou cancelado devolve `NULL`.
 
+### `public.admin_obter_evento(p_id uuid)`
+
+RPC `STABLE SECURITY DEFINER`, `search_path = ''`, retorna a linha completa
+do evento como `jsonb`. `EXECUTE` apenas para `authenticated`.
+
+Existe porque `authenticated` não recebe `SELECT` em `link_evento` (nem por
+coluna): sem ela, o formulário de edição do painel não conseguiria preencher
+o campo "Link de acesso". Internamente exige `eh_admin()`; sem permissão
+devolve `NULL`. O painel usa `obterEventoParaEdicao`
+(`src/lib/admin/consultas.ts`), que combina o `SELECT` por colunas do
+`authenticated` com essa RPC.
+
 ## RLS e políticas atuais
 
 | Tabela | Política | Comando | Papéis | Regra |
@@ -421,8 +437,9 @@ status, imagem_url, cor_tema, inscritos
 `link_evento`. `criado_por`, `created_at` e `updated_at` estão incluídos.
 
 `link_evento` fica fora dos dois grants. Por isso, `SELECT *` com a chave
-`anon` falha com `permission denied`, e o link só é obtido pela RPC
-`link_evento_do_inscrito`.
+`anon` falha com `permission denied`, e o link só é obtido pelas RPCs
+`link_evento_do_inscrito` (inscritos) e `admin_obter_evento` (edição no
+painel).
 
 `TRUNCATE`, `REFERENCES` e `TRIGGER` foram revogados de `anon` e
 `authenticated` nas seis tabelas.
@@ -444,6 +461,7 @@ status, imagem_url, cor_tema, inscritos
 | `admin_emitir_certificado(uuid)` | Não | Sim (exige `eh_admin()`) |
 | `admin_cancelar_certificado(uuid)` | Não | Sim (exige `eh_admin()`) |
 | `admin_definir_status_inscricao(uuid, text)` | Não | Sim (exige `eh_admin()`) |
+| `admin_obter_evento(uuid)` | Não | Sim (exige `eh_admin()`) |
 | `validar_certificado(uuid)` | Sim | Sim |
 
 ## Impacto no frontend

@@ -11,6 +11,7 @@ import {
   IconeCalendario,
   IconeCertificado,
   IconeCheck,
+  IconeLapis,
   IconeSetaDiagonal,
   IconeUsuarios,
 } from "@/components/ui/icons";
@@ -45,6 +46,13 @@ const ROTULOS_CATEGORIA: Record<string, string> = {
   servidor: "Servidor",
   externo: "Externo",
   outro: "Outro",
+};
+
+const ROTULOS_STATUS: Record<string, string> = {
+  rascunho: "Rascunho",
+  publicado: "Publicado",
+  cancelado: "Cancelado",
+  encerrado: "Encerrado",
 };
 
 export default function AdminEventoPage({
@@ -163,7 +171,7 @@ async function AdminEventoConteudo({
           <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
               <span className="inline-flex rounded-full border border-deep/15 bg-white/70 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-deep">
-                {evento.status}
+                {ROTULOS_STATUS[evento.status] ?? evento.status}
               </span>
               <h1 className="mt-3 max-w-3xl text-balance font-display text-2xl font-semibold tracking-tight text-deep sm:text-3xl">
                 {evento.titulo}

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/brand/logo";
 import {
   IconeBusca,
+  IconeEscudo,
   IconeMenu,
   IconePessoa,
   IconeSair,
@@ -18,12 +19,14 @@ export function Topbar({
   nome,
   email,
   avatarUrl,
+  admin = false,
   notificacoes,
   onAbrirMenu,
 }: {
   nome: string;
   email: string | null;
-  avatarUrl: string | null;
+  avatarUrl?: string | null;
+  admin?: boolean;
   notificacoes: number;
   onAbrirMenu: () => void;
 }) {
@@ -191,6 +194,17 @@ export function Topbar({
                     <IconePessoa className="h-4 w-4 text-steel-700" />
                     Meu perfil
                   </Link>
+                  {admin ? (
+                    <Link
+                      href="/admin"
+                      role="menuitem"
+                      onClick={() => setMenuAberto(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-papaya/60 hover:text-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+                    >
+                      <IconeEscudo className="h-4 w-4 text-molten" />
+                      Administração
+                    </Link>
+                  ) : null}
                 </div>
 
                 <form action={sair} className="border-t border-line p-1.5">

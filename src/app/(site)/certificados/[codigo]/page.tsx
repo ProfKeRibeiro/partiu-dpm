@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { BotaoImprimir } from "@/components/certificados/botao-imprimir";
 import { Container } from "@/components/ui/container";
-import { IconeCheck } from "@/components/ui/icons";
+import { IconeCheck, IconeQr } from "@/components/ui/icons";
 import { validarCertificado } from "@/lib/certificados/consultas";
 
 export const metadata: Metadata = {
@@ -93,6 +93,10 @@ async function CertificadoConteudo({
           </h1>
           <p className="mt-3 text-sm text-ink">
             Emitido para {certificado.participante}
+          </p>
+          <p className="mt-2 inline-flex max-w-full items-center gap-2 rounded-lg border border-deep/10 bg-white/70 px-2.5 py-1.5 font-mono text-[0.68rem] text-muted">
+            <IconeQr className="h-3.5 w-3.5 shrink-0 text-steel-700" />
+            <span className="truncate">{certificado.codigo}</span>
           </p>
         </Container>
       </header>

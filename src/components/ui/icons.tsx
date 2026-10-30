@@ -5,6 +5,7 @@ import {
   Award,
   Bell,
   CalendarDays,
+  Camera,
   Check,
   ClipboardList,
   Clock,
@@ -17,6 +18,9 @@ import {
   MapPin,
   Menu,
   Pencil,
+  Plus,
+  QrCode,
+  RefreshCw,
   Search,
   ShieldCheck,
   Sparkles,
@@ -70,3 +74,7 @@ export const IconeBusca = criarIcone(Search, "IconeBusca");
 export const IconeLapis = criarIcone(Pencil, "IconeLapis");
 export const IconeCadeado = criarIcone(Lock, "IconeCadeado");
 export const IconeSair = criarIcone(LogOut, "IconeSair");
+export const IconeQr = criarIcone(QrCode, "IconeQr");
+export const IconeCamera = criarIcone(Camera, "IconeCamera");
+export const IconeMais = criarIcone(Plus, "IconeMais");
+export const IconeAtualizar = criarIcone(RefreshCw, "IconeAtualizar");

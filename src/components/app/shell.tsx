@@ -51,6 +51,7 @@ export function AppShell({
           nome={nome}
           email={email}
           avatarUrl={avatarUrl}
+          admin={admin}
           notificacoes={notificacoes}
           onAbrirMenu={() => setMenuAberto(true)}
         />

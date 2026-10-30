@@ -37,6 +37,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     remotePatterns: padroesRemotos,
+    qualities: [75, 100],
   },
   async headers() {
     return [
@@ -48,7 +49,9 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            // camera=(self): o leitor de QR code do certificado usa a câmera
+            // do próprio dispositivo na página de validação.
+            value: "camera=(self), microphone=(), geolocation=()",
           },
         ],
       },

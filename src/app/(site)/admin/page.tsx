@@ -7,6 +7,8 @@ import { Container } from "@/components/ui/container";
 import {
   IconeCalendario,
   IconeEscudo,
+  IconeLapis,
+  IconeMais,
   IconeSetaDireita,
   IconeUsuarios,
 } from "@/components/ui/icons";
@@ -114,7 +116,11 @@ export default async function AdminPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <ButtonLink href="/admin/presencas" tamanho="sm">
+              <ButtonLink href="/admin/eventos/novo" tamanho="sm">
+                <IconeMais className="h-4 w-4" />
+                Novo evento
+              </ButtonLink>
+              <ButtonLink href="/admin/presencas" variante="contorno" tamanho="sm">
                 Confirmar presenças
               </ButtonLink>
               <ButtonLink href="/conta" variante="contorno" tamanho="sm">
@@ -171,13 +177,12 @@ export default async function AdminPage() {
                   Eventos
                 </h2>
                 <p className="mt-1 text-xs text-muted">
-                  Selecione um evento para gerenciar as inscrições.
+                  Selecione um evento para gerenciar as inscrições ou editá-lo.
                 </p>
               </div>
-              <ButtonLink href="/admin/eventos/novo" tamanho="sm">
-                Cadastrar evento
-                <IconeSetaDireita className="h-4 w-4" />
-              </ButtonLink>
+              <p className="text-xs text-muted">
+                {eventos.length} evento(s)
+              </p>
             </div>
 
             {eventos.length === 0 ? (
@@ -188,6 +193,14 @@ export default async function AdminPage() {
                 <p className="mt-1 text-sm text-muted">
                   Cadastre o primeiro evento para começar a divulgar a agenda.
                 </p>
+                <ButtonLink
+                  href="/admin/eventos/novo"
+                  tamanho="sm"
+                  className="mt-5"
+                >
+                  <IconeMais className="h-4 w-4" />
+                  Cadastrar primeiro evento
+                </ButtonLink>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -243,13 +256,22 @@ export default async function AdminPage() {
                             : ""}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <Link
-                            href={`/admin/eventos/${evento.id}`}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-deep/20 bg-white px-3.5 py-1.5 text-xs font-semibold text-deep transition-colors hover:border-deep/35 hover:bg-papaya/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
-                          >
-                            Gerenciar
-                            <IconeSetaDireita className="h-3.5 w-3.5" />
-                          </Link>
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            <Link
+                              href={`/admin/eventos/${evento.id}/editar`}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-deep/20 bg-white px-3 py-1.5 text-xs font-semibold text-deep transition-colors hover:border-deep/35 hover:bg-papaya/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+                            >
+                              <IconeLapis className="h-3.5 w-3.5" />
+                              Editar
+                            </Link>
+                            <Link
+                              href={`/admin/eventos/${evento.id}`}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-deep/20 bg-white px-3.5 py-1.5 text-xs font-semibold text-deep transition-colors hover:border-deep/35 hover:bg-papaya/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+                            >
+                              Gerenciar
+                              <IconeSetaDireita className="h-3.5 w-3.5" />
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     ))}

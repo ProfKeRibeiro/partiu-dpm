@@ -80,7 +80,7 @@ async function ListaCertificados() {
       return bData - aData;
     });
 
-  const nome = perfil?.nome_completo ?? usuario.email ?? "Participante";
+  const nome = perfil?.nome_completo ?? usuario.nome ?? "Participante";
 
   if (certificados.length === 0) {
     return (

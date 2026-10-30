@@ -11,9 +11,12 @@ O projeto está funcional de ponta a ponta no ambiente local:
 - autenticação por e-mail e senha;
 - inscrição e cancelamento com validação de vagas, prazo, público e duplicidade;
 - área do participante com perfil, inscrições, presenças e certificados;
-- painel administrativo protegido por `public.eh_admin()`;
+- painel administrativo protegido por `public.eh_admin()`, com cadastro e
+  edição de eventos;
 - presença, emissão/cancelamento de certificado e alteração de status;
-- validação pública de certificado por código.
+- validação pública de certificado por código digitado **ou** pelo leitor de
+  QR code na câmera (o QR é impresso no próprio certificado);
+- atalho “Administração” no menu do perfil quando o usuário é admin.
 
 ## Stack
 
@@ -134,8 +137,10 @@ Regras:
 | `/conta/perfil` | Sessão | Dados do participante, troca de senha e saída da conta. |
 | `/certificados` | Público | Consulta por código de validação. |
 | `/certificados/[codigo]` | Público | Certificado válido e versão para impressão. |
-| `/admin` | Admin | Painel com todos os eventos. |
+| `/admin` | Admin | Painel com todos os eventos e atalho “Novo evento”. |
+| `/admin/eventos/novo` | Admin | Formulário de cadastro de evento. |
 | `/admin/eventos/[id]` | Admin | Inscritos, presença, certificado e status. |
+| `/admin/eventos/[id]/editar` | Admin | Formulário de edição de evento. |
 
 Todas as rotas de `/conta` são barradas no proxy quando não há sessão (`307`
 para `/entrar?next=...`). A autorização de administrador é sempre reavaliada no
@@ -278,7 +283,14 @@ docs/
 ## Painel administrativo
 
 - Protegido por `usuarioEhAdmin()` no servidor e por `eh_admin()` nas RPCs.
-- Lista todos os eventos, independentemente do status.
+- Lista todos os eventos, independentemente do status; o header tem “Novo
+  evento” e cada linha tem “Editar” e “Gerenciar”.
+- `/admin/eventos/novo` e `/admin/eventos/[id]/editar` usam o formulário
+  `src/components/admin/formulario-evento.tsx` e a Server Action
+  `salvarEvento` (`src/lib/admin/eventos-acoes.ts`). A edição lê o evento via
+  SELECT por colunas + RPC `admin_obter_evento(uuid)` (necessária porque
+  `authenticated` não tem `SELECT` em `link_evento`). O botão “Cancelar
+  evento” usa `BotaoExcluirEvento`.
 - Em `/admin/eventos/[id]`: lista inscritos com e-mail, curso, série,
   instituição, presença e certificado.
 - Ações: marcar/desmarcar presença, emitir/reemitir certificado, cancelar
@@ -290,14 +302,21 @@ docs/
 
 - A emissão exige inscrição `confirmada` e presença registrada.
 - Cada certificado tem um `codigo_validacao` UUID público.
-- `/certificados` permite consultar pelo código.
+- `/certificados` raz duas formas de validar: digitar o código **ou** escanear
+  o QR code com a câmera (leitor em `src/components/certificados/leitor-qr.tsx`,
+  com `jsqr` + `getUserMedia`). O leitor aceita UUID puro ou a URL completa do
+  QR e funciona em HTTPS/localhost.
+- O QR code impresso no certificado (caixa “QR code de validação”, canto
+  inferior esquerdo do modelo) aponta para `/certificados/[codigo]`; a URL usa
+  `NEXT_PUBLIC_SITE_URL` quando configurada e cai para a origem do pedido na
+  ausência dela. É gerado junto do SVG (`qrcode`) na rota de imagem.
 - `/certificados/[codigo]` valida via `validar_certificado(uuid)` e exibe apenas
   nome, evento, data, modalidade e local; certificados cancelados não são
   exibidos.
-- `/api/certificados/[codigo]/imagem` gera o PNG pronto para impressão a partir
+- `/api/certificados/[codigo]/imagem` gera o SVG pronto para impressão a partir
   de `assets/certificado_partiu-dpm.png`, preenchendo nome, evento, data,
-  carga horária calculada e data de emissão. A rota só responde para
-  certificados emitidos e válidos.
+  carga horária calculada, data de emissão e o QR de validação. A rota só
+  responde para certificados emitidos e válidos.
 - A página tem versão de impressão.
 
 ## Segurança
@@ -314,7 +333,9 @@ docs/
 - `authenticated` também não lê `link_evento` diretamente.
 - `.env.local` não é versionado e a chave `service_role` não é usada.
 - Cabeçalhos `nosniff`, `Referrer-Policy`, `X-Frame-Options` e
-  `Permissions-Policy` são aplicados globalmente.
+  `Permissions-Policy` são aplicados globalmente. O `Permissions-Policy`
+  libera `camera=(self)` (o leitor de QR usa a câmera do dispositivo na
+  página de validação) e bloqueia microfone e geolocalização.
 
 Detalhes e checklist: `docs/seguranca-rls.md`.
 
@@ -347,6 +368,20 @@ temporários removidos ao final:
 | 404 de evento/certificado inexistente | Página 404 correta, sem shell de erro. |
 | Revisão visual (Edge headless) | Home, agenda pública, login e as cinco telas de `/conta` em 1440, 1100 e 500 px, sem overflow horizontal. |
 
+Em 30/10/2026, com build de produção e os dados reais da organização
+(1 certificado emitido):
+
+| Verificação | Resultado |
+| --- | --- |
+| `npx tsc --noEmit` | Sem erros. |
+| `npm run build` | 24 rotas geradas, sem avisos de `images.qualities`. |
+| SVG do certificado | QR embutido na caixa do modelo (`translate(115,1024)`, 190 px). |
+| QR decodificado (rasterização + `jsqr`) | Exatamente `…/certificados/<codigo_validacao>`. |
+| Recorte visual do QR | Centralizado na caixa “QR code de validação”, traço `#062d47` sobre fundo branco. |
+| RPC `validar_certificado` via `anon` | Certificado emitido retorna dados; cancelado/inexistente retornam `null`. |
+| `/certificados/<cancelado>` | Corpo renderiza a página 404 (soft 404 conhecido). |
+| Smoke HTTP | `/`, `/certificados`, `/certificados/<emitido>`, `/admin`, `/conta`, `/entrar` — todos com a resposta esperada. |
+
 Os dados de teste foram removidos: `eventos`, `inscricoes`, `presencas`,
 `certificados` e `participantes` estão em `0`; `administradores` tem `1`;
 `auth.users` tem `1` (o admin real).
@@ -377,18 +412,15 @@ continuaria exigindo validação no proxy ou a remoção do streaming.
 
 1. **Proteção de senha vazada** do Supabase Auth: ativar em Authentication →
    Password Security. Não é configurável pelas ferramentas usadas aqui.
-2. **Cadastro/edição de eventos pelo painel**: hoje os eventos são criados pelo
-   SQL Editor/dashboard. O painel admin gerencia inscrições, presença e
-   certificados, mas ainda não tem formulário de evento.
-3. **Deploy**: repositório ainda não commitado/publicado; a Vercel não foi
-   configurada.
-4. **Soft 404**: status HTTP `200` nas páginas dinâmicas inexistentes, conforme
+2. **Deploy**: a Vercel ainda não foi configurada (veja a seção acima).
+3. **Soft 404**: status HTTP `200` nas páginas dinâmicas inexistentes, conforme
    a seção acima.
-5. **Eventos de exemplo**: o banco está vazio e o portal real abre no estado
-   vazio.
-6. **Storage de certificados**: hoje o certificado é renderizado em HTML para
+4. **Storage de certificados**: hoje o certificado é renderizado como SVG para
    impressão; `arquivo_url` existe no schema, mas não há upload/geração de PDF.
-7. **Testes automatizados**: a validação é manual (build, tipos, lint, smoke HTTP
+5. **Eventos pendentes de público detalhado**: `publico_alvo_eventos` e
+   `cor_tema` já estão em uso na interface, mas as migrações SQL correspondentes
+   seguem pendentes de aplicação (veja `docs/banco-de-dados.md`).
+6. **Testes automatizados**: a validação é manual (build, tipos, smoke HTTP
    e screenshots). Não há suíte de testes unitários ou E2E no repositório.
 
 ## Documentação
