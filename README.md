@@ -399,20 +399,35 @@ continuaria exigindo validação no proxy ou a remoção do streaming.
 
 ## Deploy na Vercel
 
-1. Importe o repositório na Vercel.
-2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e
-   `NEXT_PUBLIC_SITE_URL` em Production/Preview.
-3. Rode `npm run build` localmente antes do primeiro deploy.
-4. Confirme no Supabase que a RLS está ativa e que as políticas públicas leem
-   somente eventos publicados.
-5. Cadastre ao menos um evento `publicado` (SQL Editor ou dashboard) para o
-   portal não abrir vazio.
+**Feito em 30/10/2026.** O projeto está configurado no Vercel:
+
+- Produção: <https://partiu-dpm.vercel.app> (aliás do commit `main`).
+- Repositório GitHub (`ProfKeRibeiro/partiu-dpm`) conectado: todo commit
+  enviado para `main` gera deploy de produção automaticamente.
+- CLI: `vercel` 65.8+, autenticada (`vercel login`), projeto vinculado com
+  `vercel link`.
+- Variáveis em Production/Preview:
+  `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e
+  `NEXT_PUBLIC_SITE_URL=https://partiu-dpm.vercel.app` — o QR do certificado
+  usa essa URL, e os QRs emitidos anteriores continuam válidos porque a
+  validação é pelo código, não pelo domínio.
+- Comandos úteis: `vercel ls` (deploys), `vercel logs <url>`,
+  `vercel env pull` (para desenvolvimento).
+
+Rotina de deploy: `git push origin main` e acompanhar em `vercel ls`.
+
+Confirme no Supabase que a RLS está ativa e que as políticas públicas leem
+somente eventos publicados, e cadastre ao menos um evento `publicado` para o
+portal não abrir vazio.
 
 ## Pendências
 
 1. **Proteção de senha vazada** do Supabase Auth: ativar em Authentication →
    Password Security. Não é configurável pelas ferramentas usadas aqui.
-2. **Deploy**: a Vercel ainda não foi configurada (veja a seção acima).
+2. **URLs de redirecionamento do Supabase Auth**: adicionar
+   `https://partiu-dpm.vercel.app` (e o domínio final, se usar um próprio) em
+   Authentication → URL Configuration, para login/cadastro funcionarem em
+   produção.
 3. **Soft 404**: status HTTP `200` nas páginas dinâmicas inexistentes, conforme
    a seção acima.
 4. **Storage de certificados**: hoje o certificado é renderizado como SVG para
