@@ -119,10 +119,10 @@ async function CertificadoConteudo({
             <div className="flex flex-wrap gap-2">
               <a
                 href={`/api/certificados/${certificado.codigo}/imagem`}
-                download={`certificado-${certificado.codigo}.png`}
+                download={`certificado-${certificado.codigo}.svg`}
                 className="inline-flex h-9 items-center justify-center rounded-full border border-deep/20 bg-white px-4 text-sm font-semibold text-deep transition-colors hover:bg-papaya/60"
               >
-                Baixar PNG
+                Baixar certificado
               </a>
               <BotaoImprimir />
             </div>

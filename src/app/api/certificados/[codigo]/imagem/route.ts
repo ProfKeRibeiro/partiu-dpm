@@ -1,7 +1,5 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { ImageResponse } from "next/og";
-import { createElement } from "react";
 import {
   obterCargaHorariaEmHoras,
   validarCertificado,
@@ -11,13 +9,6 @@ const MODELO_CERTIFICADO = path.join(
   process.cwd(),
   "assets",
   "certificado_partiu-dpm.png",
-);
-
-// A fonte é distribuída junto com o próprio Next e é passada explicitamente
-// ao gerador de imagem. Assim o certificado não depende das fontes instaladas
-// na máquina/servidor que o estiver gerando.
-const FONTE_CERTIFICADO = require.resolve(
-  "next/dist/compiled/@vercel/og/Geist-Regular.ttf",
 );
 
 function limitar(texto: string, maximo: number) {
@@ -63,73 +54,45 @@ function textoDoCertificado(dados: {
   };
 }
 
-function criarImagem(
-  modelo: Buffer,
-  dados: ReturnType<typeof textoDoCertificado>,
-  fonte: Buffer,
-) {
-  const camada = {
-    position: "absolute" as const,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    textAlign: "center" as const,
-    color: "#062d47",
-    fontFamily: "Certificado",
-  };
-
-  return new ImageResponse(
-    createElement(
-      "div",
-      {
-        style: {
-          position: "relative",
-          display: "flex",
-          width: "2000px",
-          height: "1414px",
-        },
-      },
-      createElement("img", {
-        src: `data:image/png;base64,${modelo.toString("base64")}`,
-        width: 2000,
-        height: 1414,
-        style: { position: "absolute", inset: 0 },
-      }),
-      createElement(
-        "div",
-        { style: { ...camada, left: "300px", top: "610px", width: "1400px", height: "80px", fontSize: `${tamanhoDaFonte(dados.participante, 54, 34)}px`, fontWeight: 700 } },
-        dados.participante,
-      ),
-      createElement(
-        "div",
-        { style: { ...camada, left: "280px", top: "743px", width: "1440px", height: "70px", fontSize: `${tamanhoDaFonte(dados.evento, 44, 26)}px`, fontWeight: 700 } },
-        dados.evento,
-      ),
-      createElement(
-        "div",
-        { style: { ...camada, left: "400px", top: "865px", width: "620px", height: "70px", fontSize: "34px" } },
-        dados.dataEvento,
-      ),
-      createElement(
-        "div",
-        { style: { ...camada, left: "1330px", top: "865px", width: "240px", height: "70px", fontSize: "38px", fontWeight: 700 } },
-        dados.cargaHoraria,
-      ),
-      createElement(
-        "div",
-        { style: { ...camada, left: "585px", top: "965px", width: "810px", height: "66px", backgroundColor: "#f9f7ef", fontSize: "29px" } },
-        `Itapetininga, ${dados.dataEmissao}`,
-      ),
-    ),
-    {
-      width: 2000,
-      height: 1414,
-      fonts: [{ name: "Certificado", data: fonte, weight: 400, style: "normal" }],
-    },
-  );
+function escaparXml(texto: string) {
+  return texto
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 }
 
-/** PNG público para certificados emitidos. Certificados cancelados ou inválidos
+/**
+ * Mantém o modelo como PNG e entrega a sobreposição como SVG. Diferente de um
+ * rasterizador de servidor, o navegador do participante tem uma fonte Unicode
+ * disponível para nomes e datas em português, sem produzir quadrados.
+ */
+function criarCertificadoSvg(
+  modelo: Buffer,
+  dados: ReturnType<typeof textoDoCertificado>,
+) {
+  const participante = escaparXml(dados.participante);
+  const evento = escaparXml(dados.evento);
+  const dataEvento = escaparXml(dados.dataEvento);
+  const cargaHoraria = escaparXml(dados.cargaHoraria);
+  const dataEmissao = escaparXml(`Itapetininga, ${dados.dataEmissao}`);
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1414" viewBox="0 0 2000 1414">
+  <image href="data:image/png;base64,${modelo.toString("base64")}" width="2000" height="1414"/>
+  <g fill="#062d47" font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <text x="1000" y="667" dominant-baseline="middle" font-size="${tamanhoDaFonte(dados.participante, 54, 34)}" font-weight="700">${participante}</text>
+    <text x="1000" y="798" dominant-baseline="middle" font-size="${tamanhoDaFonte(dados.evento, 44, 26)}" font-weight="700">${evento}</text>
+    <text x="710" y="914" dominant-baseline="middle" font-size="34">${dataEvento}</text>
+    <text x="1450" y="914" dominant-baseline="middle" font-size="38" font-weight="700">${cargaHoraria}</text>
+    <rect x="585" y="965" width="810" height="66" rx="4" fill="#f9f7ef" fill-opacity="0.94"/>
+    <text x="990" y="998" dominant-baseline="middle" font-size="29">${dataEmissao}</text>
+  </g>
+</svg>`;
+}
+
+/** Certificado público para emitidos. Certificados cancelados ou inválidos
  * recebem 404 porque a consulta usa a mesma RPC de validação pública. */
 export async function GET(
   _request: Request,
@@ -143,19 +106,16 @@ export async function GET(
   }
 
   try {
-    const [modelo, fonte] = await Promise.all([
-      readFile(MODELO_CERTIFICADO),
-      readFile(FONTE_CERTIFICADO),
-    ]);
+    const modelo = await readFile(MODELO_CERTIFICADO);
     if (modelo.length === 0) throw new Error("Modelo de certificado vazio.");
 
-    const resposta = criarImagem(modelo, textoDoCertificado(certificado), fonte);
-    resposta.headers.set(
-      "Content-Disposition",
-      `inline; filename="certificado-${codigo}.png"`,
-    );
-    resposta.headers.set("Cache-Control", "private, no-store");
-    return resposta;
+    return new Response(criarCertificadoSvg(modelo, textoDoCertificado(certificado)), {
+      headers: {
+        "Content-Type": "image/svg+xml; charset=utf-8",
+        "Content-Disposition": `inline; filename="certificado-${codigo}.svg"`,
+        "Cache-Control": "private, no-store",
+      },
+    });
   } catch (erro) {
     console.error("[partiu-dpm] Falha ao gerar a imagem do certificado.", erro);
     return new Response("Não foi possível gerar o certificado.", { status: 500 });
