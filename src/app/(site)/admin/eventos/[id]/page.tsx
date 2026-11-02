@@ -11,7 +11,6 @@ import {
   IconeCalendario,
   IconeCertificado,
   IconeCheck,
-  IconeLapis,
   IconeSetaDiagonal,
   IconeUsuarios,
 } from "@/components/ui/icons";

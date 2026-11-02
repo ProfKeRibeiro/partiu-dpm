@@ -14,6 +14,9 @@ export type CertificadoValidado = {
   evento: string;
   tipo: string;
   coordenadorNome: string | null;
+  coordenadorCargo: string | null;
+  superintendenteNome: string | null;
+  superintendenteCargo: string | null;
   eventoInicio: string | null;
   eventoFim: string | null;
   modalidade: string | null;
@@ -67,6 +70,18 @@ export async function validarCertificado(
     tipo: String(item.tipo ?? "outro"),
     coordenadorNome:
       typeof item.coordenador_nome === "string" ? item.coordenador_nome : null,
+    coordenadorCargo:
+      typeof item.coordenador_cargo === "string"
+        ? item.coordenador_cargo
+        : null,
+    superintendenteNome:
+      typeof item.superintendente_nome === "string"
+        ? item.superintendente_nome
+        : null,
+    superintendenteCargo:
+      typeof item.superintendente_cargo === "string"
+        ? item.superintendente_cargo
+        : null,
     eventoInicio:
       typeof item.evento_inicio === "string" ? item.evento_inicio : null,
     eventoFim: typeof item.evento_fim === "string" ? item.evento_fim : null,

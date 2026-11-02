@@ -101,14 +101,14 @@ async function CertificadoConteudo({
         </Container>
       </header>
 
-      <main className="flex-1 bg-canvas py-10 sm:py-14 print:bg-white print:py-0">
-        <Container>
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-2xl border border-deep/10 bg-white shadow-suave print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+      <main className="certificado-impressao flex-1 bg-canvas py-10 sm:py-14 print:bg-white print:py-0">
+        <Container className="print:max-w-none print:px-0">
+          <div className="certificado-folha mx-auto max-w-6xl overflow-hidden rounded-2xl border border-deep/10 bg-white shadow-suave print:max-w-none print:rounded-none print:border-0 print:shadow-none">
             <Image
               src={`/api/certificados/${certificado.codigo}/imagem`}
               alt={`Certificado de ${certificado.participante}`}
-              width={2000}
-              height={1414}
+              width={1754}
+              height={1240}
               unoptimized
               priority
               className="h-auto w-full"

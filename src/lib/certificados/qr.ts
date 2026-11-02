@@ -2,11 +2,11 @@ import QRCode from "qrcode";
 import { siteUrl } from "@/lib/env";
 
 /**
- * Caixa do modelo oficial (2000×1414). As coordenadas foram medidas sobre o
- * PNG: a moldura vermelha fica em ~x 88–345, y 988–1246 e o QR ocupa a área
- * interna com folga.
+ * Caixa do modelo oficial (1754×1240). As coordenadas foram medidas sobre o
+ * PNG: a moldura vermelha fica em ~x 82–296, y 882–1078 e o QR ocupa a área
+ * interna (x 92–290, y 893–1066) com folga.
  */
-const POSICAO_CAIXA = { x: 115, y: 1024, tamanho: 190 };
+const POSICAO_CAIXA = { x: 109, y: 897, tamanho: 164 };
 
 /**
  * URL completa da página de validação para um código. Prefere
@@ -27,7 +27,7 @@ export type QrEmbed = { conteudo: string; escala: number };
  * Gera o miolo de um SVG de QR code pronto para embutir no certificado.
  *
  * O `qrcode` entrega um `<svg viewBox="0 0 n n">` com um único `<path>` em
- * unidades de módulo. Como o certificado é desenhado em 2000×1414, o miolo é
+ * unidades de módulo. Como o certificado é desenhado em 1754×1240, o miolo é
  * re-escalonado para a caixa do modelo.
  */
 export async function gerarQrDoCertificado(

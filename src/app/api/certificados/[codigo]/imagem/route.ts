@@ -29,6 +29,37 @@ const FONTE_ALEX_BRUSH = path.join(
   "AlexBrush-Regular.ttf",
 );
 
+/** O modelo oficial tem 1754×1240 px (A4 paisagem a 150 dpi). As medidas
+ * abaixo foram tiradas do próprio PNG: linhas, rótulos e espaços em branco. */
+const MODELO = { largura: 1754, altura: 1240 };
+
+const LAYOUT = {
+  textoX: 735,
+  nomeY: 583,
+  fraseY: 644,
+  tituloY: 711,
+  dataY: 767,
+  dataCentroX: 802,
+  cargaCentroX: 1297,
+  emissaoY: 860,
+  diaCentroX: 751,
+  mesCentroX: 854,
+  anoCentroX: 977,
+  superintendente: { centroX: 579, nomeY: 988, cargoY: 1026 },
+  coordenador: { centroX: 1071, nomeY: 985, cargoY: 1026 },
+};
+
+const COR_TEXTO = "#082237";
+const COR_ASSINATURA = "#141414";
+const COR_CARGO = "#203748";
+const TAMANHO_CORPO = 33;
+const TAMANHO_NOME = 47;
+const TAMANHO_TITULO = 39;
+const TAMANHO_ASSINATURA = 51;
+const TAMANHO_CARGO = 22;
+const TAMANHO_EMISSAO = 21;
+const TAMANHO_CARGA = 28;
+
 /** Fontes embutidas no SVG: o certificado é exibido dentro de um <img> e o
  * navegador não pode buscar arquivos externos nesse contexto. */
 function criarFontesCss(lora: Buffer, alexBrush: Buffer) {
@@ -47,18 +78,23 @@ function criarFontesCss(lora: Buffer, alexBrush: Buffer) {
 }`;
 }
 
-/** Mantém a assinatura dentro da linha, reduzindo a fonte ou comprimindo o
- * espaçamento quando o nome é muito comprido. */
-function ajustarAssinatura(texto: string) {
-  const larguraMaxima = 460;
+/** Reduz a fonte (e, no limite, comprime o espaçamento) para o texto caber na
+ * largura disponível do modelo. */
+function ajustarTexto(
+  texto: string,
+  tamanhoPadrao: number,
+  tamanhoMinimo: number,
+  larguraMaxima: number,
+  fatorLargura: number,
+) {
   const tamanho = Math.max(
-    26,
+    tamanhoMinimo,
     Math.min(
-      58,
-      Math.floor(larguraMaxima / (0.4 * Math.max(texto.length, 1))),
+      tamanhoPadrao,
+      Math.floor(larguraMaxima / (fatorLargura * Math.max(texto.length, 1))),
     ),
   );
-  const larguraEstimada = texto.length * 0.4 * tamanho;
+  const larguraEstimada = texto.length * fatorLargura * tamanho;
 
   return {
     tamanho,
@@ -69,12 +105,14 @@ function ajustarAssinatura(texto: string) {
   };
 }
 
-function limitar(texto: string, maximo: number) {
-  return texto.length > maximo ? `${texto.slice(0, maximo - 1).trimEnd()}…` : texto;
+/** Assinaturas em Alex Brush têm desenho mais largo que a média; a linha do
+ * modelo tem 421 px, então limitamos a 400 px para não encostar nas bordas. */
+function ajustarAssinatura(texto: string) {
+  return ajustarTexto(texto, TAMANHO_ASSINATURA, 24, 400, 0.4);
 }
 
-function tamanhoDaFonte(texto: string, tamanhoPadrao: number, minimo: number) {
-  return Math.max(minimo, tamanhoPadrao - Math.max(0, texto.length - 26) * 1.4);
+function limitar(texto: string, maximo: number) {
+  return texto.length > maximo ? `${texto.slice(0, maximo - 1).trimEnd()}…` : texto;
 }
 
 function formatarDataCertificado(data: string | null) {
@@ -120,6 +158,9 @@ function textoDoCertificado(dados: {
   evento: string;
   tipo: string;
   coordenadorNome: string | null;
+  coordenadorCargo: string | null;
+  superintendenteNome: string | null;
+  superintendenteCargo: string | null;
   eventoInicio: string | null;
   eventoFim: string | null;
   dataEmissao: string | null;
@@ -130,6 +171,9 @@ function textoDoCertificado(dados: {
   const coordenador = dados.coordenadorNome?.trim()
     ? limitar(dados.coordenadorNome.trim(), 80)
     : null;
+  const superintendente = dados.superintendenteNome?.trim()
+    ? limitar(dados.superintendenteNome.trim(), 80)
+    : null;
   const cargaHoraria =
     obterCargaHorariaEmHoras(dados.eventoInicio, dados.eventoFim) ?? "—";
 
@@ -138,6 +182,13 @@ function textoDoCertificado(dados: {
     evento,
     frase,
     coordenador,
+    coordenadorCargo: dados.coordenadorCargo?.trim()
+      ? limitar(dados.coordenadorCargo.trim(), 80)
+      : null,
+    superintendente,
+    superintendenteCargo: dados.superintendenteCargo?.trim()
+      ? limitar(dados.superintendenteCargo.trim(), 80)
+      : null,
     cargaHoraria,
     dataEvento: formatarDataCertificado(dados.eventoInicio),
     emissao: partesDaData(dados.dataEmissao),
@@ -151,6 +202,28 @@ function escaparXml(texto: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;");
+}
+
+function assinaturaSvg(
+  nome: string | null,
+  cargo: string | null,
+  posicao: { centroX: number; nomeY: number; cargoY: number },
+) {
+  if (!nome) {
+    return `<!-- Assinatura sem nome: linha e cargo permanecem -->${
+      cargo
+        ? `\n    <text x="${posicao.centroX}" y="${posicao.cargoY}" text-anchor="middle" font-family="Lora, Georgia, 'Times New Roman', serif" font-size="${TAMANHO_CARGO}" letter-spacing="-1" fill="${COR_CARGO}">${escaparXml(cargo)}</text>`
+        : ""
+    }`;
+  }
+
+  const ajuste = ajustarAssinatura(nome);
+
+  return `<text x="${posicao.centroX}" y="${posicao.nomeY}" text-anchor="middle" font-family="'Alex Brush', cursive" font-size="${ajuste.tamanho}"${ajuste.textLength} fill="${COR_ASSINATURA}">${escaparXml(nome)}</text>${
+    cargo
+      ? `\n    <text x="${posicao.centroX}" y="${posicao.cargoY}" text-anchor="middle" font-family="Lora, Georgia, 'Times New Roman', serif" font-size="${TAMANHO_CARGO}" letter-spacing="-1" fill="${COR_CARGO}">${escaparXml(cargo)}</text>`
+      : ""
+  }`;
 }
 
 /**
@@ -167,44 +240,46 @@ function criarCertificadoSvg(
   const participante = escaparXml(dados.participante);
   const evento = escaparXml(dados.evento);
   const frase = escaparXml(dados.frase);
-  const coordenador = dados.coordenador ? escaparXml(dados.coordenador) : null;
-  const ajusteAssinatura = dados.coordenador
-    ? ajustarAssinatura(dados.coordenador)
-    : null;
   const dataEvento = escaparXml(dados.dataEvento);
   const cargaHoraria = escaparXml(dados.cargaHoraria);
   const diaEmissao = escaparXml(dados.emissao.dia);
   const mesEmissao = escaparXml(dados.emissao.mes);
   const anoEmissao = escaparXml(dados.emissao.ano);
 
-  const blocoAssinatura =
-    coordenador && ajusteAssinatura
-      ? `<text x="1220" y="1124" text-anchor="middle" font-family="'Alex Brush', cursive" font-size="${ajusteAssinatura.tamanho}"${ajusteAssinatura.textLength}>${coordenador}</text>`
-      : "<!-- Coordenação sem assinatura -->";
+  const nome = ajustarTexto(dados.participante, TAMANHO_NOME, 28, 665, 0.53);
+  const titulo = ajustarTexto(dados.evento, TAMANHO_TITULO, 24, 665, 0.53);
+  const fraseAjustada = ajustarTexto(dados.frase, TAMANHO_CORPO, 24, 665, 0.5);
 
   const blocoQr = qr
     ? `<g transform="translate(${caixaQr.x},${caixaQr.y}) scale(${qr.escala.toFixed(4)})" shape-rendering="crispEdges">${qr.conteudo}</g>`
     : "<!-- QR indisponível -->";
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1414" viewBox="0 0 2000 1414">
+<svg xmlns="http://www.w3.org/2000/svg" width="${MODELO.largura}" height="${MODELO.altura}" viewBox="0 0 ${MODELO.largura} ${MODELO.altura}">
   <defs>
     <style type="text/css"><![CDATA[${fontesCss}]]></style>
   </defs>
-  <image href="data:image/png;base64,${modelo.toString("base64")}" width="2000" height="1414"/>
-  <g fill="#062d47" font-family="Lora, Georgia, 'Times New Roman', serif" text-anchor="middle">
-    <text x="1000" y="650" dominant-baseline="middle" font-size="${tamanhoDaFonte(dados.participante, 54, 34)}" font-weight="700">${participante}</text>
-    <!-- "participou do/da <tipo>" usa a mesma serifa do modelo; o título fica na linha de baixo. -->
-    <text x="1000" y="724" dominant-baseline="middle" font-size="${tamanhoDaFonte(dados.frase, 38, 28)}">${frase}</text>
-    <text x="1000" y="798" dominant-baseline="middle" font-size="${tamanhoDaFonte(dados.evento, 44, 26)}" font-weight="700">${evento}</text>
-    <!-- Campos alinhados aos espaços em branco do formulário original. -->
-    <text x="805" y="882" dominant-baseline="middle" font-size="38">${dataEvento}</text>
-    <text x="1490" y="882" dominant-baseline="middle" font-size="38">${cargaHoraria}</text>
+  <image href="data:image/png;base64,${modelo.toString("base64")}" width="${MODELO.largura}" height="${MODELO.altura}"/>
+  <!-- Alinhamento à esquerda, igual aos dizeres já impressos no modelo. -->
+  <g fill="${COR_TEXTO}" font-family="Lora, Georgia, 'Times New Roman', serif" text-anchor="start">
+    <text x="${LAYOUT.textoX}" y="${LAYOUT.nomeY}" font-size="${nome.tamanho}" font-weight="700"${nome.textLength}>${participante}</text>
+    <text x="${LAYOUT.textoX}" y="${LAYOUT.fraseY}" font-size="${fraseAjustada.tamanho}"${fraseAjustada.textLength}>${frase}</text>
+    <text x="${LAYOUT.textoX}" y="${LAYOUT.tituloY}" font-size="${titulo.tamanho}" font-weight="700"${titulo.textLength}>${evento}</text>
+  </g>
+  <!-- Campos sobre os espaços em branco do formulário original. -->
+  <g fill="${COR_TEXTO}" font-family="Lora, Georgia, 'Times New Roman', serif" text-anchor="middle">
+    <text x="${LAYOUT.dataCentroX}" y="${LAYOUT.dataY}" font-size="${TAMANHO_CORPO}">${dataEvento}</text>
+    <text x="${LAYOUT.cargaCentroX}" y="${LAYOUT.dataY}" font-size="${TAMANHO_CARGA}">${cargaHoraria}</text>
     <!-- Completa: Itapetininga, [dia] de [mês] de 20[ano]. -->
-    <text x="882" y="976" dominant-baseline="middle" font-size="38">${diaEmissao}</text>
-    <text x="1079" y="976" dominant-baseline="middle" font-size="38">${mesEmissao}</text>
-    <text x="1282" y="976" dominant-baseline="middle" font-size="38">${anoEmissao}</text>
-    ${blocoAssinatura}
+    <text x="${LAYOUT.diaCentroX}" y="${LAYOUT.emissaoY}" font-size="${TAMANHO_EMISSAO}">${diaEmissao}</text>
+    <text x="${LAYOUT.mesCentroX}" y="${LAYOUT.emissaoY}" font-size="${TAMANHO_EMISSAO}">${mesEmissao}</text>
+    <text x="${LAYOUT.anoCentroX}" y="${LAYOUT.emissaoY}" font-size="${TAMANHO_EMISSAO}">${anoEmissao}</text>
+  </g>
+  <g>
+    <!-- Superintendência: assinatura e cargo configurados no evento. -->
+    ${assinaturaSvg(dados.superintendente, dados.superintendenteCargo, LAYOUT.superintendente)}
+    <!-- Coordenação: assinatura e cargo configurados no evento. -->
+    ${assinaturaSvg(dados.coordenador, dados.coordenadorCargo, LAYOUT.coordenador)}
   </g>
   <!-- QR de validação na caixa reservada pelo modelo. -->
   ${blocoQr}
@@ -235,7 +310,9 @@ export async function GET(
       throw new Error("Fonte do certificado vazia.");
     }
 
-    const qr = await gerarQrDoCertificado(urlValidacaoCertificado(request, certificado.codigo));
+    const qr = await gerarQrDoCertificado(
+      urlValidacaoCertificado(request, certificado.codigo),
+    );
     const fontesCss = criarFontesCss(lora, alexBrush);
 
     return new Response(
@@ -250,6 +327,8 @@ export async function GET(
     );
   } catch (erro) {
     console.error("[partiu-dpm] Falha ao gerar a imagem do certificado.", erro);
-    return new Response("Não foi possível gerar o certificado.", { status: 500 });
+    return new Response("Não foi possível gerar o certificado.", {
+      status: 500,
+    });
   }
 }

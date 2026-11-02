@@ -25,7 +25,7 @@ const rotuloSecao =
 
 export function SiteFooter() {
   return (
-    <footer className="border-t-[3px] border-brick bg-deep text-papaya">
+    <footer className="border-t-[3px] border-brick bg-deep text-papaya print:hidden">
       <Container className="py-8 sm:py-10">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr]">
           <div>

@@ -75,7 +75,7 @@ export function SiteHeader({
   }, [menuContaAberto]);
 
   return (
-    <header className="sticky top-0 z-50 border-t-[3px] border-b border-b-line border-t-brick bg-canvas/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-t-[3px] border-b border-b-line border-t-brick bg-canvas/95 backdrop-blur-xl print:hidden">
       <Container className="flex h-[4.75rem] items-center justify-between gap-4 lg:h-20">
         <Link
           href="/"

@@ -24,6 +24,9 @@ export type EventoAdminEdicao = {
   descricao: string;
   tipo: string;
   coordenadorNome: string | null;
+  coordenadorCargo: string | null;
+  superintendenteNome: string | null;
+  superintendenteCargo: string | null;
   modalidade: "presencial" | "online" | "hibrido";
   local: string | null;
   link: string | null;
@@ -181,6 +184,9 @@ export async function obterEventoParaEdicao(
     descricao: textoOuNulo(registro.descricao) ?? "",
     tipo: textoOuNulo(registro.tipo) ?? "outro",
     coordenadorNome: textoOuNulo(registro.coordenador_nome),
+    coordenadorCargo: textoOuNulo(registro.coordenador_cargo),
+    superintendenteNome: textoOuNulo(registro.superintendente_nome),
+    superintendenteCargo: textoOuNulo(registro.superintendente_cargo),
     modalidade,
     local: textoOuNulo(registro.local_evento),
     link: textoOuNulo(registro.link_evento),

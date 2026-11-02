@@ -12,13 +12,14 @@
 > 6. `admin_obter_evento` (30/10/2026 — leitura de `link_evento` na edição)
 > 7. `bloquear_reabertura_evento_encerrado` (02/11/2026)
 > 8. `notificacoes_usuario` (02/11/2026 — tabela, RLS e triggers)
-> 9. `certificado_inclui_tipo_evento` (02/11/2026 — `tipo` na validação pública)
-> 10. `certificado_coordenador_e_fontes` (02/11/2026 — `coordenador_nome` no evento e na validação)
+> 9. `certificado_inclui_tipo_evento` (02/11/2026 - `tipo` na validação pública)
+> 10. `certificado_coordenador_e_fontes` (02/11/2026 - `coordenador_nome` no evento e na validação)
+> 11. `certificado_cargos_e_superintendente` (02/11/2026 - cargos e assinatura da superintendência)
 >
 > SQL das últimas em
-> `docs/migracoes/20261102_notificacoes-e-bloqueio-reabertura.sql`,
-> `docs/migracoes/20261102_certificado-tipo-evento.sql` e
-> `docs/migracoes/20261102_certificado-fonte-e-coordenador.sql`.
+> `docs/migracoes/20261102_certificado-tipo-evento.sql`,
+> `docs/migracoes/20261102_certificado-fonte-e-coordenador.sql` e
+> `docs/migracoes/20261102_certificado-cargos-e-superintendente.sql`.
 >
 > As migrações de público-alvo e cor de tema em `docs/migracoes/` já estão
 > refletidas no banco; os arquivos ficam como referência histórica.
@@ -70,6 +71,9 @@ Não há views nem materialized views no schema `public`.
 | `imagem_url` | `text` | Sim | — | — |
 | `cor_tema` | `text` | Não | `'azul-petroleo'` | Uma das 32 cores definidas em `docs/migracoes/20261029_cor-tema-evento.sql` |
 | `coordenador_nome` | `text` | Sim | — | Nome da assinatura da coordenação no certificado; até 80 caracteres |
+| `coordenador_cargo` | `text` | Sim | — | Cargo abaixo da assinatura da coordenação; até 80 caracteres |
+| `superintendente_nome` | `text` | Sim | — | Nome da assinatura da superintendência; até 80 caracteres |
+| `superintendente_cargo` | `text` | Sim | — | Cargo abaixo da assinatura da superintendência; até 80 caracteres |
 | `criado_por` | `uuid` | Sim | — | FK `auth.users(id)` `ON DELETE SET NULL` |
 | `created_at` | `timestamptz` | Não | `now()` | — |
 | `updated_at` | `timestamptz` | Não | `now()` | Atualizado por trigger |
@@ -79,7 +83,9 @@ Restrições: `eventos_pkey` (PK `id`), `eventos_datas_validas`,
 `eventos_limite_vagas_check`, `eventos_modalidade_check`,
 `eventos_periodo_inscricao_valido`, `eventos_publico_alvo_check`,
 `eventos_status_check`, `eventos_tipo_check`, `eventos_inscritos_check`,
-`eventos_coordenador_nome_check` e `eventos_criado_por_fkey`.
+`eventos_coordenador_nome_check`, `eventos_coordenador_cargo_check`,
+`eventos_superintendente_nome_check`, `eventos_superintendente_cargo_check` e
+`eventos_criado_por_fkey`.
 
 Índices: `eventos_pkey` (único), `idx_eventos_status_data` em
 `(status, data_inicio)` e `eventos_criado_por_idx` em `(criado_por)`.
@@ -430,7 +436,8 @@ RPC `STABLE SECURITY DEFINER`, `search_path = ''`, retorna `jsonb`.
 
 - Filtra `certificados.status = 'emitido'`.
 - Devolve `codigo_validacao`, `status`, `data_emissao`, `arquivo_url`,
-  `participante`, `evento`, `tipo`, `coordenador_nome`, `evento_inicio`,
+  `participante`, `evento`, `tipo`, `coordenador_nome`, `coordenador_cargo`,
+  `superintendente_nome`, `superintendente_cargo`, `evento_inicio`,
   `evento_fim`, `modalidade` e `local_evento`.
 - Certificado inexistente ou cancelado devolve `NULL`.
 

@@ -183,6 +183,33 @@
   border-color: var(--tema-primaria);
 }
 
+@page certificado {
+  size: A4 landscape;
+  margin: 0;
+}
+
+@media print {
+  .certificado-impressao {
+    page: certificado;
+  }
+
+  .certificado-impressao .certificado-folha {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .certificado-impressao .certificado-folha img {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+  }
+}
+
 @media print {
   body {
     background: #ffffff;

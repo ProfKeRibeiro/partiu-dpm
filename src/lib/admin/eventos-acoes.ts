@@ -52,6 +52,9 @@ type PayloadEvento = {
   imagem_url: string | null;
   cor_tema: string;
   coordenador_nome: string | null;
+  coordenador_cargo: string | null;
+  superintendente_nome: string | null;
+  superintendente_cargo: string | null;
 };
 
 function texto(formData: FormData, campo: string) {
@@ -116,6 +119,9 @@ function montarPayload(
   const imagem = texto(formData, "imagem_url");
   const corTema = texto(formData, "cor_tema");
   const coordenadorNome = texto(formData, "coordenador_nome");
+  const coordenadorCargo = texto(formData, "coordenador_cargo");
+  const superintendenteNome = texto(formData, "superintendente_nome");
+  const superintendenteCargo = texto(formData, "superintendente_cargo");
 
   if (titulo.length < 3) {
     return { erro: "Informe um título com pelo menos 3 caracteres." };
@@ -216,6 +222,21 @@ function montarPayload(
       erro: "O nome da coordenação pode ter no máximo 80 caracteres.",
     };
   }
+  if (coordenadorCargo.length > 80) {
+    return {
+      erro: "O cargo da coordenação pode ter no máximo 80 caracteres.",
+    };
+  }
+  if (superintendenteNome.length > 80) {
+    return {
+      erro: "O nome da superintendência pode ter no máximo 80 caracteres.",
+    };
+  }
+  if (superintendenteCargo.length > 80) {
+    return {
+      erro: "O cargo da superintendência pode ter no máximo 80 caracteres.",
+    };
+  }
 
   const cursos = listaDeTexto(formData, "cursos_permitidos");
   const series = listaDeTexto(formData, "series_permitidas");
@@ -247,6 +268,9 @@ function montarPayload(
       imagem_url: imagem || null,
       cor_tema: corTema,
       coordenador_nome: coordenadorNome || null,
+      coordenador_cargo: coordenadorCargo || null,
+      superintendente_nome: superintendenteNome || null,
+      superintendente_cargo: superintendenteCargo || null,
     },
   };
 }

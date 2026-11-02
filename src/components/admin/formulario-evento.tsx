@@ -20,6 +20,9 @@ type ValoresIniciais = {
   descricao: string;
   tipo: string;
   coordenadorNome: string | null;
+  coordenadorCargo: string | null;
+  superintendenteNome: string | null;
+  superintendenteCargo: string | null;
   modalidade: "presencial" | "online" | "hibrido";
   local: string | null;
   link: string | null;
@@ -240,23 +243,71 @@ export function FormularioEvento({
       <section className="rounded-2xl border border-deep/10 bg-white p-5 shadow-sm sm:p-6">
         <div>
           <h2 className="font-display text-lg font-semibold text-deep">
-            Assinatura do certificado
+            Assinaturas do certificado
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-muted">
-            Nome que aparece na linha “Coordenadora de Curso”, em Alex Brush.
-            Se ficar em branco, a linha fica sem assinatura.
+            Os nomes aparecem em Alex Brush e os cargos em Lora. Deixe o nome
+            em branco para manter a linha sem assinatura.
           </p>
         </div>
-        <label className="mt-5 block">
-          <span className={label}>Nome de quem assina como coordenação</span>
-          <input
-            name="coordenador_nome"
-            maxLength={80}
-            defaultValue={valoresIniciais?.coordenadorNome ?? ""}
-            className={input}
-            placeholder="Ex.: Kelly C. G. Ribeiro"
-          />
-        </label>
+
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          <fieldset className="rounded-xl border border-deep/10 bg-canvas/60 p-4">
+            <legend className="px-1 text-sm font-semibold text-deep">
+              Coordenação
+            </legend>
+            <label className="mt-2 block">
+              <span className={label}>Nome</span>
+              <input
+                name="coordenador_nome"
+                maxLength={80}
+                defaultValue={valoresIniciais?.coordenadorNome ?? ""}
+                className={input}
+                placeholder="Ex.: Kelly C. G. Ribeiro"
+              />
+            </label>
+            <label className="mt-4 block">
+              <span className={label}>Cargo</span>
+              <input
+                name="coordenador_cargo"
+                maxLength={80}
+                defaultValue={
+                  valoresIniciais?.coordenadorCargo ?? "Coordenadora de Curso"
+                }
+                className={input}
+                placeholder="Ex.: Coordenadora de Curso"
+              />
+            </label>
+          </fieldset>
+
+          <fieldset className="rounded-xl border border-deep/10 bg-canvas/60 p-4">
+            <legend className="px-1 text-sm font-semibold text-deep">
+              Superintendência
+            </legend>
+            <label className="mt-2 block">
+              <span className={label}>Nome</span>
+              <input
+                name="superintendente_nome"
+                maxLength={80}
+                defaultValue={valoresIniciais?.superintendenteNome ?? ""}
+                className={input}
+                placeholder="Ex.: Daniela Silva Fogaça"
+              />
+            </label>
+            <label className="mt-4 block">
+              <span className={label}>Cargo</span>
+              <input
+                name="superintendente_cargo"
+                maxLength={80}
+                defaultValue={
+                  valoresIniciais?.superintendenteCargo ?? "Superintendente"
+                }
+                className={input}
+                placeholder="Ex.: Superintendente"
+              />
+            </label>
+          </fieldset>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-deep/10 bg-white p-5 shadow-sm sm:p-6">
