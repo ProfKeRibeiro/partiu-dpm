@@ -330,10 +330,11 @@ docs/
   nome, evento, data, modalidade e local; certificados cancelados não são
   exibidos.
 - `/api/certificados/[codigo]/imagem` gera o SVG pronto para impressão a partir
-  de `assets/certificado_partiu-dpm.png`, preenchendo nome, a frase
-  “participou do/da <tipo>”, título do evento, data, carga horária calculada,
-  data de emissão, assinaturas e o QR de validação. A rota só responde para
-  certificados emitidos e válidos.
+  de `assets/certificado_partiu-dpm.png`, preenchendo todo o miolo em linhas
+  centralizadas: “Certificamos que”, nome, “participou do/da <tipo>”, título do
+  evento, “realizado em 31 de outubro, com carga horária de 0,03 horas.” e
+  “Itapetininga, 02 de novembro de 2026”, além das assinaturas e do QR. A rota
+  só responde para certificados emitidos e válidos.
 - O texto usa **Lora** e as assinaturas usam **Alex Brush**, com os arquivos em
   `assets/fontes/` embutidos em base64 no SVG. Isso mantém a tipografia igual em
   qualquer navegador e na impressão, mesmo o certificado sendo exibido dentro de
@@ -343,6 +344,9 @@ docs/
   `eventos.superintendente_nome`/`superintendente_cargo`; nomes longos são
   reduzidos automaticamente para caber na linha. Sem nome, a linha e o cargo
   permanecem, mas sem assinatura.
+- O modelo em `assets/certificado_partiu-dpm.png` não traz texto no miolo: só
+  a moldura, as linhas de assinatura e a caixa do QR. Assim o conteúdo pode ser
+  centralizado e alterado sem depender de textos já impressos na arte.
 - A impressão usa uma página A4 paisagem sem margens e esconde cabeçalho,
   rodapé e controles: o PDF sai só com o certificado, em uma única página.
 

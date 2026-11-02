@@ -29,22 +29,19 @@ const FONTE_ALEX_BRUSH = path.join(
   "AlexBrush-Regular.ttf",
 );
 
-/** O modelo oficial tem 1754×1240 px (A4 paisagem a 150 dpi). As medidas
- * abaixo foram tiradas do próprio PNG: linhas, rótulos e espaços em branco. */
+/** O modelo oficial tem 1754×1240 px (A4 paisagem a 150 dpi). O miolo é
+ * desenhado pelo código, centralizado no eixo do certificado. As linhas de
+ * assinatura e a moldura do QR continuam no PNG. */
 const MODELO = { largura: 1754, altura: 1240 };
 
 const LAYOUT = {
-  textoX: 735,
+  centroX: 877,
+  certificamosY: 524,
   nomeY: 583,
   fraseY: 644,
   tituloY: 711,
-  dataY: 767,
-  dataCentroX: 802,
-  cargaCentroX: 1297,
+  realizadoY: 767,
   emissaoY: 860,
-  diaCentroX: 751,
-  mesCentroX: 854,
-  anoCentroX: 977,
   superintendente: { centroX: 579, nomeY: 988, cargoY: 1026 },
   coordenador: { centroX: 1071, nomeY: 985, cargoY: 1026 },
 };
@@ -57,8 +54,7 @@ const TAMANHO_NOME = 47;
 const TAMANHO_TITULO = 39;
 const TAMANHO_ASSINATURA = 51;
 const TAMANHO_CARGO = 22;
-const TAMANHO_EMISSAO = 21;
-const TAMANHO_CARGA = 28;
+const TAMANHO_EMISSAO = 25;
 
 /** Fontes embutidas no SVG: o certificado é exibido dentro de um <img> e o
  * navegador não pode buscar arquivos externos nesse contexto. */
@@ -115,42 +111,28 @@ function limitar(texto: string, maximo: number) {
   return texto.length > maximo ? `${texto.slice(0, maximo - 1).trimEnd()}…` : texto;
 }
 
-function formatarDataCertificado(data: string | null) {
-  if (!data) return "Data não informada";
+/** Datas por extenso em português: "31 de outubro" ou
+ * "02 de novembro de 2026". */
+function dataPorExtenso(data: string | null, comAno: boolean) {
+  if (!data) return "—";
 
   const valor = new Date(data);
-  if (Number.isNaN(valor.getTime())) return "Data não informada";
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    timeZone: "America/Sao_Paulo",
-  }).format(valor);
-}
-
-function partesDaData(data: string | null) {
-  if (!data) return { dia: "—", mes: "—", ano: "—" };
-
-  const valor = new Date(data);
-  if (Number.isNaN(valor.getTime())) return { dia: "—", mes: "—", ano: "—" };
+  if (Number.isNaN(valor.getTime())) return "—";
 
   const partes = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "long",
-    year: "numeric",
+    ...(comAno ? { year: "numeric" } : {}),
     timeZone: "America/Sao_Paulo",
   }).formatToParts(valor);
 
   const parte = (tipo: Intl.DateTimeFormatPartTypes) =>
     partes.find((item) => item.type === tipo)?.value ?? "—";
 
-  return {
-    dia: parte("day"),
-    mes: parte("month"),
-    // O formulário traz "de 20" já impresso; só completamos os dois últimos dígitos.
-    ano: parte("year").slice(-2),
-  };
+  const dia = parte("day");
+  const mes = parte("month");
+
+  return comAno ? `${dia} de ${mes} de ${parte("year")}` : `${dia} de ${mes}`;
 }
 
 function textoDoCertificado(dados: {
@@ -176,6 +158,7 @@ function textoDoCertificado(dados: {
     : null;
   const cargaHoraria =
     obterCargaHorariaEmHoras(dados.eventoInicio, dados.eventoFim) ?? "—";
+  const dataEvento = dataPorExtenso(dados.eventoInicio, false);
 
   return {
     participante,
@@ -189,9 +172,8 @@ function textoDoCertificado(dados: {
     superintendenteCargo: dados.superintendenteCargo?.trim()
       ? limitar(dados.superintendenteCargo.trim(), 80)
       : null,
-    cargaHoraria,
-    dataEvento: formatarDataCertificado(dados.eventoInicio),
-    emissao: partesDaData(dados.dataEmissao),
+    realizado: `realizado em ${dataEvento}, com carga horária de ${cargaHoraria} horas.`,
+    emissao: `Itapetininga, ${dataPorExtenso(dados.dataEmissao, true)}`,
   };
 }
 
@@ -240,15 +222,27 @@ function criarCertificadoSvg(
   const participante = escaparXml(dados.participante);
   const evento = escaparXml(dados.evento);
   const frase = escaparXml(dados.frase);
-  const dataEvento = escaparXml(dados.dataEvento);
-  const cargaHoraria = escaparXml(dados.cargaHoraria);
-  const diaEmissao = escaparXml(dados.emissao.dia);
-  const mesEmissao = escaparXml(dados.emissao.mes);
-  const anoEmissao = escaparXml(dados.emissao.ano);
+  const realizado = escaparXml(dados.realizado);
+  const emissao = escaparXml(dados.emissao);
+  const certificamos = "Certificamos que";
 
-  const nome = ajustarTexto(dados.participante, TAMANHO_NOME, 28, 665, 0.53);
-  const titulo = ajustarTexto(dados.evento, TAMANHO_TITULO, 24, 665, 0.53);
-  const fraseAjustada = ajustarTexto(dados.frase, TAMANHO_CORPO, 24, 665, 0.5);
+  const nome = ajustarTexto(dados.participante, TAMANHO_NOME, 28, 1000, 0.53);
+  const titulo = ajustarTexto(dados.evento, TAMANHO_TITULO, 24, 1000, 0.53);
+  const fraseAjustada = ajustarTexto(dados.frase, TAMANHO_CORPO, 24, 1000, 0.5);
+  const realizadoAjustado = ajustarTexto(
+    dados.realizado,
+    TAMANHO_CORPO,
+    22,
+    1060,
+    0.5,
+  );
+  const emissaoAjustada = ajustarTexto(
+    dados.emissao,
+    TAMANHO_EMISSAO,
+    18,
+    1060,
+    0.5,
+  );
 
   const blocoQr = qr
     ? `<g transform="translate(${caixaQr.x},${caixaQr.y}) scale(${qr.escala.toFixed(4)})" shape-rendering="crispEdges">${qr.conteudo}</g>`
@@ -260,20 +254,14 @@ function criarCertificadoSvg(
     <style type="text/css"><![CDATA[${fontesCss}]]></style>
   </defs>
   <image href="data:image/png;base64,${modelo.toString("base64")}" width="${MODELO.largura}" height="${MODELO.altura}"/>
-  <!-- Alinhamento à esquerda, igual aos dizeres já impressos no modelo. -->
-  <g fill="${COR_TEXTO}" font-family="Lora, Georgia, 'Times New Roman', serif" text-anchor="start">
-    <text x="${LAYOUT.textoX}" y="${LAYOUT.nomeY}" font-size="${nome.tamanho}" font-weight="700"${nome.textLength}>${participante}</text>
-    <text x="${LAYOUT.textoX}" y="${LAYOUT.fraseY}" font-size="${fraseAjustada.tamanho}"${fraseAjustada.textLength}>${frase}</text>
-    <text x="${LAYOUT.textoX}" y="${LAYOUT.tituloY}" font-size="${titulo.tamanho}" font-weight="700"${titulo.textLength}>${evento}</text>
-  </g>
-  <!-- Campos sobre os espaços em branco do formulário original. -->
+  <!-- Todo o miolo é centralizado no eixo do certificado. -->
   <g fill="${COR_TEXTO}" font-family="Lora, Georgia, 'Times New Roman', serif" text-anchor="middle">
-    <text x="${LAYOUT.dataCentroX}" y="${LAYOUT.dataY}" font-size="${TAMANHO_CORPO}">${dataEvento}</text>
-    <text x="${LAYOUT.cargaCentroX}" y="${LAYOUT.dataY}" font-size="${TAMANHO_CARGA}">${cargaHoraria}</text>
-    <!-- Completa: Itapetininga, [dia] de [mês] de 20[ano]. -->
-    <text x="${LAYOUT.diaCentroX}" y="${LAYOUT.emissaoY}" font-size="${TAMANHO_EMISSAO}">${diaEmissao}</text>
-    <text x="${LAYOUT.mesCentroX}" y="${LAYOUT.emissaoY}" font-size="${TAMANHO_EMISSAO}">${mesEmissao}</text>
-    <text x="${LAYOUT.anoCentroX}" y="${LAYOUT.emissaoY}" font-size="${TAMANHO_EMISSAO}">${anoEmissao}</text>
+    <text x="${LAYOUT.centroX}" y="${LAYOUT.certificamosY}" font-size="${TAMANHO_CORPO}">${certificamos}</text>
+    <text x="${LAYOUT.centroX}" y="${LAYOUT.nomeY}" font-size="${nome.tamanho}" font-weight="700"${nome.textLength}>${participante}</text>
+    <text x="${LAYOUT.centroX}" y="${LAYOUT.fraseY}" font-size="${fraseAjustada.tamanho}"${fraseAjustada.textLength}>${frase}</text>
+    <text x="${LAYOUT.centroX}" y="${LAYOUT.tituloY}" font-size="${titulo.tamanho}" font-weight="700"${titulo.textLength}>${evento}</text>
+    <text x="${LAYOUT.centroX}" y="${LAYOUT.realizadoY}" font-size="${realizadoAjustado.tamanho}"${realizadoAjustado.textLength}>${realizado}</text>
+    <text x="${LAYOUT.centroX}" y="${LAYOUT.emissaoY}" font-size="${emissaoAjustada.tamanho}"${emissaoAjustada.textLength}>${emissao}</text>
   </g>
   <g>
     <!-- Superintendência: assinatura e cargo configurados no evento. -->
