@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { emailConfigurado } from "@/lib/email/enviar";
+import { enviarEmailInscricao, type AvisoInscricao } from "@/lib/email/inscricao";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const REGEX_UUID =
@@ -57,6 +60,60 @@ function revalidar(eventoId: string | null) {
   }
 }
 
+type ClienteSupabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+/**
+ * Agenda o e-mail de aviso para depois da resposta (não atrasa a inscrição).
+ * Busca evento e nome do participante aqui, enquanto a sessão e os cookies
+ * ainda estão disponíveis; dentro do `after` só resta o envio.
+ */
+async function agendarAviso(
+  supabase: ClienteSupabase,
+  tipo: AvisoInscricao,
+  eventoId: string | null,
+  usuario: { id: string; email?: string | null },
+) {
+  if (!emailConfigurado() || !usuario.email || !eventoId) return;
+
+  const [{ data: evento }, { data: participante }] = await Promise.all([
+    supabase
+      .from("eventos")
+      .select("id, titulo, tipo, modalidade, local_evento, data_inicio, data_fim")
+      .eq("id", eventoId)
+      .maybeSingle(),
+    supabase
+      .from("participantes")
+      .select("nome_completo")
+      .eq("id", usuario.id)
+      .maybeSingle(),
+  ]);
+
+  if (!evento) {
+    console.warn("[partiu-dpm] Evento não encontrado para o e-mail de aviso.");
+    return;
+  }
+
+  const para = usuario.email;
+  const nome = participante?.nome_completo?.trim() || "";
+
+  after(async () => {
+    await enviarEmailInscricao({
+      tipo,
+      para,
+      nome,
+      evento: {
+        id: evento.id as string,
+        titulo: evento.titulo as string,
+        tipo: evento.tipo as string,
+        modalidade: evento.modalidade as string,
+        local: (evento.local_evento as string | null) ?? null,
+        inicio: (evento.data_inicio as string | null) ?? null,
+        fim: (evento.data_fim as string | null) ?? null,
+      },
+    });
+  });
+}
+
 export async function inscreverEmEvento(
   _estado: EstadoInscricao,
   formData: FormData,
@@ -105,6 +162,10 @@ export async function inscreverEmEvento(
   };
   const codigo = resultado.codigo ?? "erro";
 
+  if (resultado.ok === true && codigo === "inscrito") {
+    await agendarAviso(supabase, "inscrito", eventoId, userData.user);
+  }
+
   revalidar(eventoId);
 
   return {
@@ -152,6 +213,22 @@ export async function cancelarInscricao(
 
   const resultado = (data ?? {}) as { ok?: boolean; codigo?: string };
   const codigo = resultado.codigo ?? "erro";
+
+  if (resultado.ok === true && codigo === "cancelada") {
+    let eventoDaInscricao = eventoId;
+
+    if (!eventoDaInscricao) {
+      const { data: inscricao } = await supabase
+        .from("inscricoes")
+        .select("evento_id")
+        .eq("id", inscricaoId)
+        .maybeSingle();
+
+      eventoDaInscricao = (inscricao?.evento_id as string | undefined) ?? null;
+    }
+
+    await agendarAviso(supabase, "cancelado", eventoDaInscricao, userData.user);
+  }
 
   revalidar(eventoId);
 

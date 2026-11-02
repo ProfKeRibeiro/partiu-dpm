@@ -270,6 +270,13 @@ docs/
   notificações reais do participante: contador de não lidas, lista das mais
   recentes, abertura do destino ao clicar e **Marcar todas como lidas**. Cada
   item é gerado no banco pelos triggers de inscrição, presença e certificado.
+- Além da notificação no sino, quem se inscreve ou cancela recebe um e-mail com
+  os detalhes do evento (título, tipo, data/hora, modalidade e local), enviado
+  depois da resposta da Server Action com `after()`. O tom muda conforme o caso:
+  boas-vindas e “te espero lá” na inscrição; “que pena, te aguardamos no próximo
+  evento” no cancelamento. O envio usa `BREVO_API_KEY` (prioridade) ou
+  `RESEND_API_KEY`, com `EMAIL_REMETENTE` verificado no provedor; sem essas
+  variáveis a inscrição continua funcionando e o envio é apenas ignorado.
 - O menu da conta, tanto na topbar da área logada quanto no cabeçalho
   público (home e painel), traz **Minha área**, **Meu perfil**,
   **Administração** (só para admin) e **Sair**. Inscrições e certificados não
