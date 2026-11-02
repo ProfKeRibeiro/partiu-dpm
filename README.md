@@ -332,14 +332,15 @@ docs/
 - `/api/certificados/[codigo]/imagem` gera o SVG pronto para impressão a partir
   de `assets/certificado_partiu-dpm.png`, preenchendo todo o miolo em linhas
   centralizadas: “Certificamos que”, nome, “participou do/da <tipo>”, título do
-  evento, “realizado em 31 de outubro, com carga horária de 0,03 horas.” e
-  “Itapetininga, 02 de novembro de 2026”, além das assinaturas e do QR. A rota
-  só responde para certificados emitidos e válidos.
+  evento, “realizado em 31 de outubro de 2026, com carga horária de 0,03
+  horas.” e “Itapetininga, 02 de novembro de 2026”, além das assinaturas e do
+  QR. A rota só responde para certificados emitidos e válidos.
 - O texto usa **Lora** e as assinaturas usam **Alex Brush**, com os arquivos em
   `assets/fontes/` embutidos em base64 no SVG. Isso mantém a tipografia igual em
   qualquer navegador e na impressão, mesmo o certificado sendo exibido dentro de
-  um `<img>`. Em Canva, 16,1 pt e 24,6 pt equivalem a cerca de 33 px e 51 px na
-  arte de 1754×1240 a 150 dpi.
+  um `<img>`. O espaço de projeto do SVG é 1754×1240 (a arte oficial tem
+  3500×2475, ~300 dpi); em Canva, 16,1 pt e 24,6 pt equivalem a cerca de 33 px
+  e 51 px nesse espaço.
 - As assinaturas vêm de `eventos.coordenador_nome`/`coordenador_cargo` e
   `eventos.superintendente_nome`/`superintendente_cargo`; nomes longos são
   reduzidos automaticamente para caber na linha. Sem nome, a linha e o cargo

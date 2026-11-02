@@ -29,9 +29,11 @@ const FONTE_ALEX_BRUSH = path.join(
   "AlexBrush-Regular.ttf",
 );
 
-/** O modelo oficial tem 1754×1240 px (A4 paisagem a 150 dpi). O miolo é
- * desenhado pelo código, centralizado no eixo do certificado. As linhas de
- * assinatura e a moldura do QR continuam no PNG. */
+/** O modelo oficial tem 3500×2475 px (A4 paisagem a ~300 dpi). O SVG usa o
+ * espaço de projeto de 1754×1240 (metade), então o raster entra com resolução
+ * de sobra na impressão e o texto vetorial continua nas mesmas posições. O
+ * miolo é desenhado pelo código, centralizado no eixo do certificado; as
+ * linhas de assinatura e a moldura do QR continuam no PNG. */
 const MODELO = { largura: 1754, altura: 1240 };
 
 const LAYOUT = {
@@ -158,7 +160,7 @@ function textoDoCertificado(dados: {
     : null;
   const cargaHoraria =
     obterCargaHorariaEmHoras(dados.eventoInicio, dados.eventoFim) ?? "—";
-  const dataEvento = dataPorExtenso(dados.eventoInicio, false);
+  const dataEvento = dataPorExtenso(dados.eventoInicio, true);
 
   return {
     participante,
