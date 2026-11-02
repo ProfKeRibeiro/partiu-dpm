@@ -14,7 +14,7 @@ import { fraseParticipacao } from "@/lib/evento-utils";
 const MODELO_CERTIFICADO = path.join(
   process.cwd(),
   "assets",
-  "certificado_partiu-dpm.png",
+  "certificado_partiu-dpm.webp",
 );
 const FONTE_LORA = path.join(
   process.cwd(),
@@ -255,7 +255,7 @@ function criarCertificadoSvg(
   <defs>
     <style type="text/css"><![CDATA[${fontesCss}]]></style>
   </defs>
-  <image href="data:image/png;base64,${modelo.toString("base64")}" width="${MODELO.largura}" height="${MODELO.altura}"/>
+  <image href="data:image/webp;base64,${modelo.toString("base64")}" width="${MODELO.largura}" height="${MODELO.altura}"/>
   <!-- Todo o miolo é centralizado no eixo do certificado. -->
   <g fill="${COR_TEXTO}" font-family="Lora, Georgia, 'Times New Roman', serif" text-anchor="middle">
     <text x="${LAYOUT.centroX}" y="${LAYOUT.certificamosY}" font-size="${TAMANHO_CORPO}">${certificamos}</text>

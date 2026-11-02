@@ -330,7 +330,7 @@ docs/
   nome, evento, data, modalidade e local; certificados cancelados não são
   exibidos.
 - `/api/certificados/[codigo]/imagem` gera o SVG pronto para impressão a partir
-  de `assets/certificado_partiu-dpm.png`, preenchendo todo o miolo em linhas
+  de `assets/certificado_partiu-dpm.webp`, preenchendo todo o miolo em linhas
   centralizadas: “Certificamos que”, nome, “participou do/da <tipo>”, título do
   evento, “realizado em 31 de outubro de 2026, com carga horária de 0,03
   horas.” e “Itapetininga, 02 de novembro de 2026”, além das assinaturas e do
@@ -345,9 +345,11 @@ docs/
   `eventos.superintendente_nome`/`superintendente_cargo`; nomes longos são
   reduzidos automaticamente para caber na linha. Sem nome, a linha e o cargo
   permanecem, mas sem assinatura.
-- O modelo em `assets/certificado_partiu-dpm.png` não traz texto no miolo: só
+- O modelo em `assets/certificado_partiu-dpm.webp` não traz texto no miolo: só
   a moldura, as linhas de assinatura e a caixa do QR. Assim o conteúdo pode ser
-  centralizado e alterado sem depender de textos já impressos na arte.
+  centralizado e alterado sem depender de textos já impressos na arte. O PNG em
+  `assets/certificado_partiu-dpm.png` é mantido como fonte editável; a versão
+  WebP (qualidade 95) é a que vai ao ar, ~87% menor e sem diferença visível.
 - A impressão usa uma página A4 paisagem sem margens e esconde cabeçalho,
   rodapé e controles: o PDF sai só com o certificado, em uma única página.
 
@@ -407,7 +409,7 @@ Em 30/10/2026, com build de produção e os dados reais da organização
 | --- | --- |
 | `npx tsc --noEmit` | Sem erros. |
 | `npm run build` | 24 rotas geradas, sem avisos de `images.qualities`. |
-| SVG do certificado | QR embutido na caixa do modelo (`translate(115,1024)`, 190 px). |
+| SVG do certificado | QR embutido na caixa do modelo (`translate(109,897)`, 164 px). |
 | QR decodificado (rasterização + `jsqr`) | Exatamente `…/certificados/<codigo_validacao>`. |
 | Recorte visual do QR | Centralizado na caixa “QR code de validação”, traço `#062d47` sobre fundo branco. |
 | RPC `validar_certificado` via `anon` | Certificado emitido retorna dados; cancelado/inexistente retornam `null`. |
