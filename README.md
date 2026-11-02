@@ -298,9 +298,11 @@ docs/
   SELECT por colunas + RPC `admin_obter_evento(uuid)` (necessária porque
   `authenticated` não tem `SELECT` em `link_evento`). O rodapé do formulário
   tem **Cancelar**, que volta ao painel ou à página do evento, e o botão
-  “Cancelar evento” usa `BotaoExcluirEvento`. O formulário também tem o campo
-  **Nome de quem assina como coordenação**, salvo em `eventos.coordenador_nome`
-  e impresso na assinatura do certificado; em branco, a linha fica vazia.
+  “Cancelar evento” usa `BotaoExcluirEvento`. O formulário também tem o bloco
+  **Assinaturas do certificado**, com nome e cargo da coordenação
+  (`coordenador_nome`/`coordenador_cargo`) e da superintendência
+  (`superintendente_nome`/`superintendente_cargo`); em branco, a linha fica
+  vazia.
 - Evento com status `encerrado` não pode voltar a outro status: o formulário
   desabilita o select, a Server Action recusa a alteração e o trigger
   `impedir_reabertura_evento` bloqueia qualquer `UPDATE` direto no banco. Isso
@@ -330,17 +332,19 @@ docs/
 - `/api/certificados/[codigo]/imagem` gera o SVG pronto para impressão a partir
   de `assets/certificado_partiu-dpm.png`, preenchendo nome, a frase
   “participou do/da <tipo>”, título do evento, data, carga horária calculada,
-  data de emissão e o QR de validação. A rota só responde para certificados
-  emitidos e válidos.
-- O texto usa **Lora** e a assinatura da coordenação usa **Alex Brush**, com os
-  arquivos em `assets/fontes/` embutidos em base64 no SVG. Isso mantém a
-  tipografia igual em qualquer navegador e na impressão, mesmo o certificado
-  sendo exibido dentro de um `<img>`. Em Canva, 16,1 pt e 24,6 pt equivalem a
-  cerca de 38 px e 58 px na arte de 2000×1414 a 171 dpi.
-- A assinatura da coordenação vem de `eventos.coordenador_nome`; nomes longos
-  são reduzidos automaticamente para caber na linha. Sem nome, a linha e o
-  rótulo “Coordenadora de Curso” permanecem, mas sem assinatura.
-- A página tem versão de impressão.
+  data de emissão, assinaturas e o QR de validação. A rota só responde para
+  certificados emitidos e válidos.
+- O texto usa **Lora** e as assinaturas usam **Alex Brush**, com os arquivos em
+  `assets/fontes/` embutidos em base64 no SVG. Isso mantém a tipografia igual em
+  qualquer navegador e na impressão, mesmo o certificado sendo exibido dentro de
+  um `<img>`. Em Canva, 16,1 pt e 24,6 pt equivalem a cerca de 33 px e 51 px na
+  arte de 1754×1240 a 150 dpi.
+- As assinaturas vêm de `eventos.coordenador_nome`/`coordenador_cargo` e
+  `eventos.superintendente_nome`/`superintendente_cargo`; nomes longos são
+  reduzidos automaticamente para caber na linha. Sem nome, a linha e o cargo
+  permanecem, mas sem assinatura.
+- A impressão usa uma página A4 paisagem sem margens e esconde cabeçalho,
+  rodapé e controles: o PDF sai só com o certificado, em uma única página.
 
 ## Segurança
 
