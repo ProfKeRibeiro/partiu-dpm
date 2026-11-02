@@ -46,6 +46,23 @@ export function rotuloTipo(tipo: string) {
   return chave.charAt(0).toUpperCase() + chave.slice(1);
 }
 
+const FRASES_PARTICIPACAO: Record<string, string> = {
+  palestra: "participou da palestra",
+  oficina: "participou da oficina",
+  feira: "participou da feira",
+  curso: "participou do curso",
+  treinamento: "participou do treinamento",
+};
+
+/**
+ * Frase impressa no certificado. Usa o tipo cadastrado no evento para escolher
+ * a preposição correta; tipos desconhecidos ou "outro" caem na frase genérica.
+ */
+export function fraseParticipacao(tipo: string) {
+  const chave = tipo.trim().toLowerCase();
+  return FRASES_PARTICIPACAO[chave] ?? "participou do evento";
+}
+
 export function dataDoEvento(valor: string): Date {
   return new Date(valor);
 }

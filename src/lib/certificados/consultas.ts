@@ -12,6 +12,7 @@ export type CertificadoValidado = {
   dataEmissao: string | null;
   participante: string;
   evento: string;
+  tipo: string;
   eventoInicio: string | null;
   eventoFim: string | null;
   modalidade: string | null;
@@ -62,6 +63,7 @@ export async function validarCertificado(
       typeof item.data_emissao === "string" ? item.data_emissao : null,
     participante: String(item.participante ?? "Participante"),
     evento: String(item.evento ?? "Evento"),
+    tipo: String(item.tipo ?? "outro"),
     eventoInicio:
       typeof item.evento_inicio === "string" ? item.evento_inicio : null,
     eventoFim: typeof item.evento_fim === "string" ? item.evento_fim : null,

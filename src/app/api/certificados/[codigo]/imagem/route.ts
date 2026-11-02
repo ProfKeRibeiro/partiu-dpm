@@ -9,6 +9,7 @@ import {
   gerarQrDoCertificado,
   urlValidacaoCertificado,
 } from "@/lib/certificados/qr";
+import { fraseParticipacao } from "@/lib/evento-utils";
 
 const MODELO_CERTIFICADO = path.join(
   process.cwd(),
@@ -65,18 +66,21 @@ function partesDaData(data: string | null) {
 function textoDoCertificado(dados: {
   participante: string;
   evento: string;
+  tipo: string;
   eventoInicio: string | null;
   eventoFim: string | null;
   dataEmissao: string | null;
 }) {
   const participante = limitar(dados.participante.trim() || "Participante", 80);
   const evento = limitar(dados.evento.trim() || "Evento", 115);
+  const frase = fraseParticipacao(dados.tipo);
   const cargaHoraria =
     obterCargaHorariaEmHoras(dados.eventoInicio, dados.eventoFim) ?? "—";
 
   return {
     participante,
     evento,
+    frase,
     cargaHoraria,
     dataEvento: formatarDataCertificado(dados.eventoInicio),
     emissao: partesDaData(dados.dataEmissao),
@@ -104,6 +108,7 @@ function criarCertificadoSvg(
 ) {
   const participante = escaparXml(dados.participante);
   const evento = escaparXml(dados.evento);
+  const frase = escaparXml(dados.frase);
   const dataEvento = escaparXml(dados.dataEvento);
   const cargaHoraria = escaparXml(dados.cargaHoraria);
   const diaEmissao = escaparXml(dados.emissao.dia);
@@ -119,14 +124,16 @@ function criarCertificadoSvg(
   <image href="data:image/png;base64,${modelo.toString("base64")}" width="2000" height="1414"/>
   <g fill="#062d47" font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
     <text x="1000" y="650" dominant-baseline="middle" font-size="${tamanhoDaFonte(dados.participante, 54, 34)}" font-weight="700">${participante}</text>
+    <!-- "participou do/da <tipo>" usa a serifa do modelo; o título fica na linha de baixo. -->
+    <text x="1000" y="724" dominant-baseline="middle" font-family="Georgia, 'Times New Roman', serif" font-size="${tamanhoDaFonte(dados.frase, 40, 30)}">${frase}</text>
     <text x="1000" y="798" dominant-baseline="middle" font-size="${tamanhoDaFonte(dados.evento, 44, 26)}" font-weight="700">${evento}</text>
     <!-- Campos alinhados aos espaços em branco do formulário original. -->
     <text x="805" y="882" dominant-baseline="middle" font-size="29">${dataEvento}</text>
     <text x="1490" y="882" dominant-baseline="middle" font-size="34" font-weight="700">${cargaHoraria}</text>
     <!-- Completa: Itapetininga, [dia] de [mês] de 20[ano]. -->
-    <text x="842" y="1003" dominant-baseline="middle" font-size="28">${diaEmissao}</text>
-    <text x="1057" y="1003" dominant-baseline="middle" font-size="28">${mesEmissao}</text>
-    <text x="1245" y="1003" dominant-baseline="middle" font-size="28">${anoEmissao}</text>
+    <text x="882" y="976" dominant-baseline="middle" font-size="28">${diaEmissao}</text>
+    <text x="1079" y="976" dominant-baseline="middle" font-size="28">${mesEmissao}</text>
+    <text x="1278" y="976" dominant-baseline="middle" font-size="28">${anoEmissao}</text>
   </g>
   <!-- QR de validação na caixa reservada pelo modelo. -->
   ${blocoQr}

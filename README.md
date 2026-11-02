@@ -326,9 +326,10 @@ docs/
   nome, evento, data, modalidade e local; certificados cancelados não são
   exibidos.
 - `/api/certificados/[codigo]/imagem` gera o SVG pronto para impressão a partir
-  de `assets/certificado_partiu-dpm.png`, preenchendo nome, evento, data,
-  carga horária calculada, data de emissão e o QR de validação. A rota só
-  responde para certificados emitidos e válidos.
+  de `assets/certificado_partiu-dpm.png`, preenchendo nome, a frase
+  “participou do/da <tipo>”, título do evento, data, carga horária calculada,
+  data de emissão e o QR de validação. A rota só responde para certificados
+  emitidos e válidos.
 - A página tem versão de impressão.
 
 ## Segurança

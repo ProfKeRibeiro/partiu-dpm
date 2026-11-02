@@ -12,9 +12,11 @@
 > 6. `admin_obter_evento` (30/10/2026 — leitura de `link_evento` na edição)
 > 7. `bloquear_reabertura_evento_encerrado` (02/11/2026)
 > 8. `notificacoes_usuario` (02/11/2026 — tabela, RLS e triggers)
+> 9. `certificado_inclui_tipo_evento` (02/11/2026 — `tipo` na validação pública)
 >
-> SQL das duas últimas em
-> `docs/migracoes/20261102_notificacoes-e-bloqueio-reabertura.sql`.
+> SQL das três últimas em
+> `docs/migracoes/20261102_notificacoes-e-bloqueio-reabertura.sql` e
+> `docs/migracoes/20261102_certificado-tipo-evento.sql`.
 >
 > As migrações de público-alvo e cor de tema em `docs/migracoes/` já estão
 > refletidas no banco; os arquivos ficam como referência histórica.
@@ -425,8 +427,8 @@ RPC `STABLE SECURITY DEFINER`, `search_path = ''`, retorna `jsonb`.
 
 - Filtra `certificados.status = 'emitido'`.
 - Devolve `codigo_validacao`, `status`, `data_emissao`, `arquivo_url`,
-  `participante`, `evento`, `evento_inicio`, `evento_fim`, `modalidade` e
-  `local_evento`.
+  `participante`, `evento`, `tipo`, `evento_inicio`, `evento_fim`, `modalidade`
+  e `local_evento`.
 - Certificado inexistente ou cancelado devolve `NULL`.
 
 ### `public.admin_obter_evento(p_id uuid)`
