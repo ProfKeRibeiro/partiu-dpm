@@ -55,6 +55,16 @@ function traduzirErroAuth(mensagem: string) {
   if (texto.includes("signups not allowed")) {
     return "O cadastro está desativado no momento. Procure a organização.";
   }
+  if (
+    texto.includes("link is invalid") ||
+    texto.includes("has expired") ||
+    texto.includes("invalid or has expired")
+  ) {
+    return "Este link expirou ou já foi usado. Peça um novo link e abra no mesmo navegador.";
+  }
+  if (texto.includes("auth session missing")) {
+    return "Sua sessão expirou. Entre novamente para continuar.";
+  }
 
   return "Não foi possível concluir agora. Tente novamente em alguns instantes.";
 }
@@ -141,7 +151,7 @@ export async function criarConta(
         categoria,
         curso: categoria === "aluno" ? curso : null,
       },
-      emailRedirectTo: `${siteUrl}/entrar`,
+      emailRedirectTo: `${siteUrl}/auth/confirm?next=${encodeURIComponent(destino)}`,
     },
   });
 
@@ -151,12 +161,141 @@ export async function criarConta(
 
   if (data.session) {
     revalidatePath("/", "layout");
-    redirect(destino === "/conta" ? "/conta" : destino);
+    redirect(destino);
+  }
+
+  /* Com a confirmação de e-mail ativa o Supabase não devolve erro para um
+   * e-mail já cadastrado: devolve um usuário sem identidades. Sem esta
+   * checagem a pessoa veria "conta criada" e ficaria sem caminho de volta. */
+  if (data.user && (data.user.identities?.length ?? 0) === 0) {
+    return {
+      erro: "Este e-mail já tem conta no Partiu DPM. Entre com sua senha ou use “Esqueci minha senha” para definir uma nova.",
+    };
   }
 
   return {
     mensagem:
-      "Conta criada! Enviamos um link de confirmação para o seu e-mail. Depois de confirmar, volte e entre.",
+      "Conta criada! Enviamos um link de confirmação para o seu e-mail. Ao abrir o link você já entra na sua conta.",
+  };
+}
+
+/**
+ * Recuperação de senha. A resposta é sempre a mesma, exista ou não a conta,
+ * para não revelar quais e-mails estão cadastrados.
+ */
+export async function solicitarRecuperacao(
+  _estado: EstadoAuth,
+  formData: FormData,
+): Promise<EstadoAuth> {
+  if (!isSupabaseConfigured) {
+    return {
+      erro: "O Supabase ainda não está configurado neste ambiente.",
+    };
+  }
+
+  const email = texto(formData, "email").toLowerCase();
+
+  if (!email.includes("@") || email.length < 5) {
+    return { erro: "Informe o e-mail cadastrado na sua conta." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/confirm?next=/redefinir-senha`,
+  });
+
+  if (error) {
+    return { erro: traduzirErroAuth(error.message) };
+  }
+
+  return {
+    mensagem:
+      "Se este e-mail tiver conta no Partiu DPM, enviamos um link para redefinir a senha. Confira a caixa de entrada e o spam; o link vale por uma hora.",
+  };
+}
+
+/**
+ * Define a nova senha de quem chegou pelo link de recuperação e já tem sessão.
+ */
+export async function redefinirSenha(
+  _estado: EstadoAuth,
+  formData: FormData,
+): Promise<EstadoAuth> {
+  if (!isSupabaseConfigured) {
+    return {
+      erro: "O Supabase ainda não está configurado neste ambiente.",
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !userData.user) {
+    return {
+      erro: "O link expirou ou foi aberto em outro navegador. Peça um novo link de recuperação.",
+    };
+  }
+
+  const senha = texto(formData, "senha");
+  const confirmacao = texto(formData, "confirmacao");
+
+  if (senha.length < 8) {
+    return { erro: "A nova senha precisa ter pelo menos 8 caracteres." };
+  }
+
+  if (senha !== confirmacao) {
+    return { erro: "As senhas informadas não são iguais." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: senha });
+
+  if (error) {
+    return { erro: traduzirErroAuth(error.message) };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/conta");
+}
+
+/** Reenvia o e-mail de confirmação para contas que ainda não confirmaram. */
+export async function reenviarConfirmacao(
+  _estado: EstadoAuth,
+  formData: FormData,
+): Promise<EstadoAuth> {
+  if (!isSupabaseConfigured) {
+    return {
+      erro: "O Supabase ainda não está configurado neste ambiente.",
+    };
+  }
+
+  const email = texto(formData, "email").toLowerCase();
+
+  if (!email.includes("@") || email.length < 5) {
+    return { erro: "Informe o e-mail usado no cadastro." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: `${siteUrl}/auth/confirm?next=/conta`,
+    },
+  });
+
+  if (error) {
+    if (error.message.toLowerCase().includes("already confirmed")) {
+      return {
+        erro: "Esta conta já está confirmada. Use sua senha para entrar.",
+      };
+    }
+
+    return { erro: traduzirErroAuth(error.message) };
+  }
+
+  return {
+    mensagem:
+      "Reenviamos o link de confirmação. Confira a caixa de entrada e o spam; o link vale por uma hora.",
   };
 }
 

@@ -133,6 +133,10 @@ Regras:
 | `/eventos` | Público | Agenda de eventos publicados. |
 | `/eventos/[id]` | Público | Detalhe, vagas, inscrição, cancelamento e link do inscrito. |
 | `/entrar` | Público | Login e criação de conta. |
+| `/recuperar-senha` | Público | Pedido de link para redefinir a senha. |
+| `/redefinir-senha` | Público (link) | Define a nova senha a partir do link do e-mail. |
+| `/reconfirmar-email` | Público | Reenvia o e-mail de confirmação de cadastro. |
+| `/auth/confirm` | Público | Troca o `code` do e-mail do Supabase por sessão. |
 | `/conta` | Sessão | Painel do participante com boas-vindas, agenda e atalhos. |
 | `/conta/eventos` | Sessão | Agenda com busca, filtros por tipo/modalidade e paginação. |
 | `/conta/inscricoes` | Sessão | Inscrições por status, cancelamento, presença e certificado. |
@@ -170,6 +174,9 @@ src/
       eventos/page.tsx        Agenda
       eventos/[id]/page.tsx   Detalhe e inscrição
       entrar/page.tsx         Login/cadastro
+      recuperar-senha/        Pedido de link de nova senha
+      redefinir-senha/        Formulário da nova senha
+      reconfirmar-email/      Reenvio da confirmação
       certificados/           Consulta e certificado
       admin/                  Painel administrativo
     (app)/
@@ -229,6 +236,17 @@ docs/
 - Login e cadastro usam `supabase.auth` com e-mail e senha.
 - O fluxo de confirmação de e-mail é suportado; se a confirmação estiver ativa no
   projeto, o usuário recebe o aviso após o cadastro.
+- Os links do Supabase (confirmação e recuperação) passam por `/auth/confirm`,
+  que troca o `code` por sessão e redireciona para `next`. O `redirectTo` usa
+  `siteUrl` e precisa estar na lista de Redirect URLs do projeto
+  (`https://partiu-dpm.vercel.app/**`).
+- Cadastro repetido com e-mail já existente não gera conta nova: o Supabase
+  devolve um usuário sem identidades e a tela orienta a entrar ou usar
+  “Esqueci minha senha”.
+- Recuperação: `/recuperar-senha` envia o link, `/redefinir-senha` define a nova
+  senha com `updateUser` e mantém a sessão aberta. A resposta do pedido é sempre
+  a mesma, para não revelar quais e-mails estão cadastrados.
+- Contas sem confirmação podem pedir outro e-mail em `/reconfirmar-email`.
 - A sessão é renovada no proxy com `getClaims()` e persistida em cookies por
   `@supabase/ssr`.
 - Server Actions revalidam a sessão e os dados no servidor. Nenhuma decisão de

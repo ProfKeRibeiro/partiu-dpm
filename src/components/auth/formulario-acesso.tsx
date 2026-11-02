@@ -155,7 +155,13 @@ export function FormularioAcesso({
           <p className="mt-1.5 text-xs text-muted">
             Use uma senha longa e única. Ela nunca é exibida para a organização.
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-2 text-right text-xs">
+            <Link href="/recuperar-senha" className={link}>
+              Esqueci minha senha
+            </Link>
+          </p>
+        )}
       </div>
 
       <button
@@ -179,6 +185,10 @@ export function FormularioAcesso({
               className={link}
             >
               Entrar
+            </Link>{" "}
+            ·{" "}
+            <Link href="/recuperar-senha" className={link}>
+              Esqueci minha senha
             </Link>
           </>
         ) : (
@@ -192,6 +202,13 @@ export function FormularioAcesso({
             </Link>
           </>
         )}
+      </p>
+
+      <p className="text-center text-xs leading-relaxed text-muted">
+        Não recebeu o e-mail de confirmação?{" "}
+        <Link href="/reconfirmar-email" className={link}>
+          Reenviar
+        </Link>
       </p>
     </form>
   );

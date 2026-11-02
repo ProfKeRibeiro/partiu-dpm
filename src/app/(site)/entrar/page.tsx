@@ -48,7 +48,7 @@ function destinoSeguro(valor: string | undefined) {
 export default async function EntrarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ modo?: string; next?: string }>;
+  searchParams: Promise<{ modo?: string; next?: string; erro?: string }>;
 }) {
   await connection();
 
@@ -61,6 +61,12 @@ export default async function EntrarPage({
 
   const modo = params.modo === "criar" ? "criar" : "entrar";
   const next = destinoSeguro(params.next);
+  const aviso =
+    params.erro === "link" || params.erro === "expirado"
+      ? "O link que você abriu expirou ou já foi usado. Entre com sua senha ou peça um novo link de recuperação — o link precisa ser aberto no mesmo navegador em que foi pedido."
+      : params.erro === "config"
+        ? "O login ainda não está configurado neste ambiente."
+        : null;
 
   return (
     <>
@@ -116,7 +122,17 @@ export default async function EntrarPage({
               </p>
 
               {isSupabaseConfigured ? (
-                <FormularioAcesso modo={modo} next={next} />
+                <>
+                  {aviso ? (
+                    <p
+                      role="alert"
+                      className="mt-5 rounded-xl border border-ember-400/40 bg-ember-50 px-4 py-3 text-sm leading-relaxed text-molten"
+                    >
+                      {aviso}
+                    </p>
+                  ) : null}
+                  <FormularioAcesso modo={modo} next={next} />
+                </>
               ) : (
                 <p className="mt-6 rounded-xl border border-ember-400/40 bg-ember-50 px-4 py-3 text-sm leading-relaxed text-molten">
                   O Supabase ainda não está configurado neste ambiente. Defina
