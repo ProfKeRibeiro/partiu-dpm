@@ -35,6 +35,17 @@ export function getSupabasePublicConfig() {
   return supabasePublicConfig;
 }
 
+/** Domínio de produção que a Vercel injeta automaticamente (`host` sem
+ * protocolo). Evita cair em localhost quando `NEXT_PUBLIC_SITE_URL` não está
+ * definida no projeto. */
+function urlDaVercel() {
+  const host =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() ||
+    process.env.VERCEL_URL?.trim();
+
+  return host ? `https://${host.replace(/^https?:\/\//, "").replace(/\/$/, "")}` : null;
+}
+
 function resolverSiteUrl() {
   const valor = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 
@@ -42,7 +53,7 @@ function resolverSiteUrl() {
     return valor.replace(/\/$/, "");
   }
 
-  return "http://localhost:3000";
+  return urlDaVercel() ?? "http://localhost:3000";
 }
 
 export const siteUrl = resolverSiteUrl();
