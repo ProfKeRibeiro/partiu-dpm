@@ -298,7 +298,9 @@ docs/
   SELECT por colunas + RPC `admin_obter_evento(uuid)` (necessária porque
   `authenticated` não tem `SELECT` em `link_evento`). O rodapé do formulário
   tem **Cancelar**, que volta ao painel ou à página do evento, e o botão
-  “Cancelar evento” usa `BotaoExcluirEvento`.
+  “Cancelar evento” usa `BotaoExcluirEvento`. O formulário também tem o campo
+  **Nome de quem assina como coordenação**, salvo em `eventos.coordenador_nome`
+  e impresso na assinatura do certificado; em branco, a linha fica vazia.
 - Evento com status `encerrado` não pode voltar a outro status: o formulário
   desabilita o select, a Server Action recusa a alteração e o trigger
   `impedir_reabertura_evento` bloqueia qualquer `UPDATE` direto no banco. Isso
@@ -330,6 +332,14 @@ docs/
   “participou do/da <tipo>”, título do evento, data, carga horária calculada,
   data de emissão e o QR de validação. A rota só responde para certificados
   emitidos e válidos.
+- O texto usa **Lora** e a assinatura da coordenação usa **Alex Brush**, com os
+  arquivos em `assets/fontes/` embutidos em base64 no SVG. Isso mantém a
+  tipografia igual em qualquer navegador e na impressão, mesmo o certificado
+  sendo exibido dentro de um `<img>`. Em Canva, 16,1 pt e 24,6 pt equivalem a
+  cerca de 38 px e 58 px na arte de 2000×1414 a 171 dpi.
+- A assinatura da coordenação vem de `eventos.coordenador_nome`; nomes longos
+  são reduzidos automaticamente para caber na linha. Sem nome, a linha e o
+  rótulo “Coordenadora de Curso” permanecem, mas sem assinatura.
 - A página tem versão de impressão.
 
 ## Segurança

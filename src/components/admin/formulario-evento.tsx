@@ -19,6 +19,7 @@ type ValoresIniciais = {
   titulo: string;
   descricao: string;
   tipo: string;
+  coordenadorNome: string | null;
   modalidade: "presencial" | "online" | "hibrido";
   local: string | null;
   link: string | null;
@@ -234,6 +235,28 @@ export function FormularioEvento({
             </details>
           </fieldset>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-deep/10 bg-white p-5 shadow-sm sm:p-6">
+        <div>
+          <h2 className="font-display text-lg font-semibold text-deep">
+            Assinatura do certificado
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            Nome que aparece na linha “Coordenadora de Curso”, em Alex Brush.
+            Se ficar em branco, a linha fica sem assinatura.
+          </p>
+        </div>
+        <label className="mt-5 block">
+          <span className={label}>Nome de quem assina como coordenação</span>
+          <input
+            name="coordenador_nome"
+            maxLength={80}
+            defaultValue={valoresIniciais?.coordenadorNome ?? ""}
+            className={input}
+            placeholder="Ex.: Kelly C. G. Ribeiro"
+          />
+        </label>
       </section>
 
       <section className="rounded-2xl border border-deep/10 bg-white p-5 shadow-sm sm:p-6">

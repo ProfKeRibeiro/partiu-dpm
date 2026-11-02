@@ -23,6 +23,7 @@ export type EventoAdminEdicao = {
   titulo: string;
   descricao: string;
   tipo: string;
+  coordenadorNome: string | null;
   modalidade: "presencial" | "online" | "hibrido";
   local: string | null;
   link: string | null;
@@ -179,6 +180,7 @@ export async function obterEventoParaEdicao(
     titulo,
     descricao: textoOuNulo(registro.descricao) ?? "",
     tipo: textoOuNulo(registro.tipo) ?? "outro",
+    coordenadorNome: textoOuNulo(registro.coordenador_nome),
     modalidade,
     local: textoOuNulo(registro.local_evento),
     link: textoOuNulo(registro.link_evento),

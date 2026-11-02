@@ -39,6 +39,10 @@ const nextConfig: NextConfig = {
     remotePatterns: padroesRemotos,
     qualities: [75, 100],
   },
+  // O modelo e as fontes do certificado são lidos com fs em tempo de execução.
+  outputFileTracingIncludes: {
+    "/api/certificados/**": ["./assets/**/*"],
+  },
   async headers() {
     return [
       {
