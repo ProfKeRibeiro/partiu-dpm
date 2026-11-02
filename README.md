@@ -252,9 +252,10 @@ docs/
   notificações reais do participante: contador de não lidas, lista das mais
   recentes, abertura do destino ao clicar e **Marcar todas como lidas**. Cada
   item é gerado no banco pelos triggers de inscrição, presença e certificado.
-- O menu da conta traz **Minha área**, **Meu perfil**, **Administração** (só
-  para admin) e **Sair**. Inscrições e certificados não são repetidos no menu,
-  porque já estão na sidebar.
+- O menu da conta, tanto na topbar da área logada quanto no cabeçalho
+  público (home e painel), traz **Minha área**, **Meu perfil**,
+  **Administração** (só para admin) e **Sair**. Inscrições e certificados não
+  são repetidos no menu, porque já estão na sidebar.
 - O painel `/conta` combina hero navy sobre a fachada da ETEC, seta vermelha da
   marca, números de inscrições/certificados, cards de próximos eventos e a lista
   “Seus próximos eventos”. Não há card de perfil nem banner de CTA duplicado.

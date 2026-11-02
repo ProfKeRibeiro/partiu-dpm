@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { obterPerfil, obterUsuario } from "@/lib/auth/sessao";
+import { obterPerfil, obterUsuario, usuarioEhAdmin } from "@/lib/auth/sessao";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export default function SiteLayout({ children }: { children: ReactNode }) {
@@ -28,13 +28,16 @@ async function CabecalhoComSessao() {
   }
 
   const usuario = await obterUsuario();
-  const perfil = usuario ? await obterPerfil() : null;
+  const [perfil, admin] = usuario
+    ? await Promise.all([obterPerfil(), usuarioEhAdmin()])
+    : [null, false];
 
   return (
     <SiteHeader
       estadoSessao={usuario ? "autenticado" : "anonimo"}
       nome={perfil?.nome_completo ?? usuario?.nome ?? null}
       avatarUrl={usuario?.avatarUrl ?? null}
+      admin={admin}
     />
   );
 }

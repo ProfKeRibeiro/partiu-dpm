@@ -9,6 +9,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import {
   IconeCasa,
+  IconeEscudo,
   IconeFechar,
   IconeMenu,
   IconePessoa,
@@ -26,10 +27,12 @@ export function SiteHeader({
   estadoSessao,
   nome,
   avatarUrl,
+  admin = false,
 }: {
   estadoSessao: "carregando" | "autenticado" | "anonimo";
   nome?: string | null;
   avatarUrl?: string | null;
+  admin?: boolean;
 }) {
   const [aberto, setAberto] = useState(false);
   const [menuContaAberto, setMenuContaAberto] = useState(false);
@@ -162,6 +165,17 @@ export function SiteHeader({
                     <IconePessoa className="h-4 w-4 text-steel-700" />
                     Meu perfil
                   </Link>
+                  {admin ? (
+                    <Link
+                      href="/admin"
+                      role="menuitem"
+                      onClick={() => setMenuContaAberto(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-papaya/60 hover:text-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+                    >
+                      <IconeEscudo className="h-4 w-4 text-steel-700" />
+                      Administração
+                    </Link>
+                  ) : null}
                   <form action={sair} className="mt-1 border-t border-line pt-1">
                     <button
                       type="submit"
@@ -261,6 +275,17 @@ export function SiteHeader({
                     <IconePessoa className="h-4 w-4" />
                     Meu perfil
                   </ButtonLink>
+                  {admin ? (
+                    <ButtonLink
+                      href="/admin"
+                      variante="contorno"
+                      tamanho="md"
+                      onClick={() => setAberto(false)}
+                    >
+                      <IconeEscudo className="h-4 w-4" />
+                      Administração
+                    </ButtonLink>
+                  ) : null}
                   <form action={sair}>
                     <button
                       type="submit"
