@@ -153,7 +153,7 @@ export function FormularioEvento({
           <label><span className={label}>Local</span><input name="local_evento" maxLength={200} defaultValue={valoresIniciais?.local ?? ""} className={input} placeholder="Ex.: Auditório da ETEC" /></label>
           <label><span className={label}>Link de acesso</span><input type="url" name="link_evento" maxLength={500} defaultValue={valoresIniciais?.link ?? ""} className={input} placeholder="https://..." /></label>
           <label><span className={label}>Limite de vagas</span><input type="number" name="limite_vagas" min="1" step="1" defaultValue={valoresIniciais?.limiteVagas ?? ""} className={input} placeholder="Deixe em branco para ilimitado" /></label>
-          <label><span className={label}>Status *</span><select name="status" defaultValue={valoresIniciais?.status ?? "rascunho"} className={input}><option value="rascunho">Rascunho</option><option value="publicado">Publicado</option><option value="cancelado">Cancelado</option><option value="encerrado">Encerrado</option></select></label>
+          <label><span className={label}>Status *</span><select name="status" defaultValue={valoresIniciais?.status ?? "rascunho"} disabled={valoresIniciais?.status === "encerrado"} className={input}><option value="rascunho">Rascunho</option><option value="publicado">Publicado</option><option value="cancelado">Cancelado</option><option value="encerrado">Encerrado</option></select>{valoresIniciais?.status === "encerrado" ? (<><input type="hidden" name="status" value="encerrado" /><span className="mt-1 block text-xs leading-relaxed text-muted">Evento encerrado: não é possível reabri-lo, para preservar presenças e certificados já emitidos.</span></>) : null}</label>
         </div>
       </section>
 
@@ -276,14 +276,16 @@ export function FormularioEvento({
               </label>
             ))}
           </div>
-          <p className="mt-3 text-xs text-muted">
-            A cor marcada será a predominante. Ex.: use Esmeralda para um
-            evento como MongoDB Day.
-          </p>
         </fieldset>
       </section>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <a
+          href={valoresIniciais ? `/admin/eventos/${valoresIniciais.id}` : "/admin"}
+          className="inline-flex h-11 items-center justify-center rounded-full border border-deep/20 bg-white px-5 text-sm font-semibold text-deep transition-colors hover:border-deep/35 hover:bg-papaya/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-deep"
+        >
+          Cancelar
+        </a>
         <button type="submit" disabled={pendente} className="inline-flex h-11 items-center justify-center rounded-full bg-deep px-5 text-sm font-semibold text-papaya transition-colors hover:bg-navy-800 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-deep">
           {pendente
             ? "Salvando…"

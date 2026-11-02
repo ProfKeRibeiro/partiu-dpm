@@ -151,14 +151,6 @@ export default async function EntrarPage({
                   })}
                 </ul>
               </div>
-
-              <div className="rounded-2xl border border-deep/10 bg-white p-5">
-                <p className="text-xs leading-relaxed text-muted">
-                  A organização nunca solicita sua senha. A confirmação de e-mail
-                  é feita pelo Supabase Auth, e seus dados ficam protegidos por
-                  RLS.
-                </p>
-              </div>
             </aside>
           </div>
         </Container>

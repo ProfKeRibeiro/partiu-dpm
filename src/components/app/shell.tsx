@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Sidebar } from "@/components/app/sidebar";
 import { Topbar } from "@/components/app/topbar";
 import { IconeFechar } from "@/components/ui/icons";
+import type { Notificacao } from "@/types/notificacao";
 
 export function AppShell({
   nome,
@@ -11,6 +12,7 @@ export function AppShell({
   avatarUrl,
   admin,
   notificacoes,
+  listaNotificacoes,
   children,
 }: {
   nome: string;
@@ -18,6 +20,7 @@ export function AppShell({
   avatarUrl: string | null;
   admin: boolean;
   notificacoes: number;
+  listaNotificacoes: Notificacao[];
   children: ReactNode;
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -53,6 +56,7 @@ export function AppShell({
           avatarUrl={avatarUrl}
           admin={admin}
           notificacoes={notificacoes}
+          listaNotificacoes={listaNotificacoes}
           onAbrirMenu={() => setMenuAberto(true)}
         />
         <main id="conteudo" className="flex-1">

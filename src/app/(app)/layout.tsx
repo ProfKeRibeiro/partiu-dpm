@@ -6,7 +6,7 @@ import { AppShell } from "@/components/app/shell";
 import { ShellCarregando } from "@/components/app/estados";
 import { obterPerfil, obterUsuario, usuarioEhAdmin } from "@/lib/auth/sessao";
 import { isSupabaseConfigured } from "@/lib/env";
-import { listarMinhasInscricoes } from "@/lib/inscricoes/consultas";
+import { listarNotificacoes } from "@/lib/notificacoes/consultas";
 
 export const metadata: Metadata = {
   title: "Minha área",
@@ -53,18 +53,13 @@ async function SessaoApp({ children }: { children: ReactNode }) {
     return <AcessoRestrito variante="sessao" destinoLogin="/conta" />;
   }
 
-  const [perfil, admin, inscricoes] = await Promise.all([
+  const [perfil, admin, notificacoes] = await Promise.all([
     obterPerfil(),
     usuarioEhAdmin(),
-    listarMinhasInscricoes(),
+    listarNotificacoes(),
   ]);
 
   const nome = perfil?.nome_completo ?? usuario.nome ?? "participante";
-
-  const notificacoes = inscricoes.filter(
-    (inscricao) =>
-      inscricao.status === "confirmada" && inscricao.evento !== null,
-  ).length;
 
   return (
     <AppShell
@@ -72,7 +67,8 @@ async function SessaoApp({ children }: { children: ReactNode }) {
       email={usuario.email}
       avatarUrl={usuario.avatarUrl}
       admin={admin}
-      notificacoes={notificacoes}
+      notificacoes={notificacoes.naoLidas}
+      listaNotificacoes={notificacoes.itens}
     >
       {children}
     </AppShell>

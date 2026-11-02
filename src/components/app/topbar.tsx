@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/brand/logo";
 import {
   IconeBusca,
+  IconeCasa,
   IconeEscudo,
   IconeMenu,
   IconePessoa,
@@ -14,6 +16,12 @@ import {
   IconeSino,
 } from "@/components/ui/icons";
 import { sair } from "@/lib/auth/acoes";
+import { formatarDataHora } from "@/lib/format";
+import {
+  marcarNotificacaoLida,
+  marcarTodasNotificacoesLidas,
+} from "@/lib/notificacoes/acoes";
+import type { Notificacao } from "@/types/notificacao";
 
 export function Topbar({
   nome,
@@ -21,6 +29,7 @@ export function Topbar({
   avatarUrl,
   admin = false,
   notificacoes,
+  listaNotificacoes,
   onAbrirMenu,
 }: {
   nome: string;
@@ -28,13 +37,17 @@ export function Topbar({
   avatarUrl?: string | null;
   admin?: boolean;
   notificacoes: number;
+  listaNotificacoes: Notificacao[];
   onAbrirMenu: () => void;
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
+  const [sinoAberto, setSinoAberto] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const sinoRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!menuAberto) return;
+    if (!menuAberto && !sinoAberto) return;
 
     function aoClicar(evento: MouseEvent) {
       if (
@@ -43,10 +56,20 @@ export function Topbar({
       ) {
         setMenuAberto(false);
       }
+
+      if (
+        sinoRef.current &&
+        !sinoRef.current.contains(evento.target as Node)
+      ) {
+        setSinoAberto(false);
+      }
     }
 
     function aoPressionar(evento: KeyboardEvent) {
-      if (evento.key === "Escape") setMenuAberto(false);
+      if (evento.key === "Escape") {
+        setMenuAberto(false);
+        setSinoAberto(false);
+      }
     }
 
     document.addEventListener("mousedown", aoClicar);
@@ -56,7 +79,7 @@ export function Topbar({
       document.removeEventListener("mousedown", aoClicar);
       document.removeEventListener("keydown", aoPressionar);
     };
-  }, [menuAberto]);
+  }, [menuAberto, sinoAberto]);
 
   return (
     <header className="sticky top-0 z-30 border-b border-deep/10 bg-white/95 backdrop-blur-xl">
@@ -106,23 +129,156 @@ export function Topbar({
             <IconeBusca className="h-5 w-5" />
           </Link>
 
-          <Link
-            href="/conta/inscricoes"
-            aria-label={
-              notificacoes > 0
-                ? `Minhas inscrições — ${notificacoes} inscrição(ões) confirmada(s)`
-                : "Minhas inscrições"
-            }
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-deep transition-colors hover:bg-papaya/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
-          >
-            <IconeSino className="h-5 w-5" />
-            {notificacoes > 0 ? (
-              <span
-                className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brick ring-2 ring-white"
-                aria-hidden="true"
-              />
+          <div ref={sinoRef} className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setSinoAberto((valor) => !valor);
+                setMenuAberto(false);
+              }}
+              aria-expanded={sinoAberto}
+              aria-haspopup="menu"
+              aria-label={
+                notificacoes > 0
+                  ? `Notificações — ${notificacoes} não lida(s)`
+                  : "Notificações"
+              }
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-deep transition-colors hover:bg-papaya/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+            >
+              <IconeSino className="h-5 w-5" />
+              {notificacoes > 0 ? (
+                <>
+                  <span
+                    className="absolute right-1.5 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brick px-1 text-[0.6rem] font-bold leading-none text-white ring-2 ring-white"
+                    aria-hidden="true"
+                  >
+                    {notificacoes > 9 ? "9+" : notificacoes}
+                  </span>
+                  <span className="sr-only">{notificacoes} não lida(s)</span>
+                </>
+              ) : null}
+            </button>
+
+            {sinoAberto ? (
+              <div
+                role="menu"
+                aria-label="Notificações"
+                className="absolute right-0 top-full z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-deep/10 bg-white shadow-elevada"
+              >
+                <div className="flex items-center justify-between border-b border-line bg-canvas px-4 py-3">
+                  <p className="text-sm font-semibold text-deep">
+                    Notificações
+                  </p>
+                  <span className="rounded-full border border-deep/10 bg-white px-2 py-0.5 text-[0.62rem] font-semibold text-muted">
+                    {notificacoes > 0
+                      ? `${notificacoes} não lida(s)`
+                      : "Tudo lido"}
+                  </span>
+                </div>
+
+                {listaNotificacoes.length === 0 ? (
+                  <p className="px-4 py-8 text-center text-xs leading-relaxed text-muted">
+                    Nenhuma notificação por enquanto. Avisos de inscrição,
+                    presença e certificado aparecem aqui.
+                  </p>
+                ) : (
+                  <ul className="max-h-[21rem] divide-y divide-line overflow-y-auto">
+                    {listaNotificacoes.map((notificacao) => {
+                      const destino =
+                        notificacao.href ?? "/conta/inscricoes";
+                      const naoLida = !notificacao.lidaEm;
+
+                      const conteudo = (
+                        <>
+                          <span
+                            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                              naoLida ? "bg-brick" : "bg-line"
+                            }`}
+                            aria-hidden="true"
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-sm font-semibold text-deep">
+                              {notificacao.titulo}
+                            </span>
+                            <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+                              {notificacao.mensagem}
+                            </span>
+                            <span className="mt-1 block text-[0.62rem] font-medium uppercase tracking-[0.12em] text-muted/80">
+                              {formatarDataHora(notificacao.criadaEm)}
+                            </span>
+                          </span>
+                        </>
+                      );
+
+                      return (
+                        <li key={notificacao.id}>
+                          {naoLida ? (
+                            <form
+                              action={marcarNotificacaoLida}
+                              onSubmit={() => setSinoAberto(false)}
+                            >
+                              <input
+                                type="hidden"
+                                name="notificacao_id"
+                                value={notificacao.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="href"
+                                value={destino}
+                              />
+                              <input
+                                type="hidden"
+                                name="retorno"
+                                value={pathname}
+                              />
+                              <button
+                                type="submit"
+                                className="flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-papaya/50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brick"
+                              >
+                                {conteudo}
+                              </button>
+                            </form>
+                          ) : (
+                            <Link
+                              href={destino}
+                              onClick={() => setSinoAberto(false)}
+                              className="flex items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-papaya/40 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brick"
+                            >
+                              {conteudo}
+                            </Link>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                <div className="flex items-center justify-between gap-2 border-t border-line bg-canvas px-3 py-2">
+                  <form
+                    action={marcarTodasNotificacoesLidas}
+                    onSubmit={() => setSinoAberto(false)}
+                  >
+                    <input type="hidden" name="retorno" value={pathname} />
+                    <button
+                      type="submit"
+                      disabled={notificacoes === 0}
+                      className="rounded-full px-2 py-1 text-[0.7rem] font-semibold text-brick underline-offset-4 transition-colors hover:text-molten hover:underline disabled:cursor-not-allowed disabled:text-muted disabled:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+                    >
+                      Marcar todas como lidas
+                    </button>
+                  </form>
+                  <Link
+                    href="/conta/inscricoes"
+                    onClick={() => setSinoAberto(false)}
+                    className="rounded-full px-2 py-1 text-[0.7rem] font-semibold text-deep underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+                  >
+                    Minhas inscrições
+                  </Link>
+                </div>
+              </div>
             ) : null}
-          </Link>
+          </div>
 
           <span
             className="mx-1 hidden h-8 w-px bg-line sm:block"
@@ -185,6 +341,15 @@ export function Topbar({
                 </div>
 
                 <div className="p-1.5">
+                  <Link
+                    href="/conta"
+                    role="menuitem"
+                    onClick={() => setMenuAberto(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-papaya/60 hover:text-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+                  >
+                    <IconeCasa className="h-4 w-4 text-steel-700" />
+                    Minha área
+                  </Link>
                   <Link
                     href="/conta/perfil"
                     role="menuitem"

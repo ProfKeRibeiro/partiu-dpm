@@ -280,6 +280,23 @@ export async function salvarEvento(
   const supabase = await createSupabaseServerClient();
 
   if (editando) {
+    const { data: atual, error: erroConsulta } = await supabase
+      .from("eventos")
+      .select("status")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (erroConsulta) {
+      console.error("[partiu-dpm] Falha ao consultar evento.", erroConsulta);
+      return { erro: "Não foi possível carregar o evento. Tente novamente." };
+    }
+
+    if (atual?.status === "encerrado" && resultado.dados.status !== "encerrado") {
+      return {
+        erro: "Este evento já foi encerrado e não pode ser reaberto, para preservar presenças e certificados já emitidos.",
+      };
+    }
+
     const { error } = await supabase
       .from("eventos")
       .update(resultado.dados)
@@ -287,6 +304,13 @@ export async function salvarEvento(
 
     if (error) {
       console.error("[partiu-dpm] Falha ao atualizar evento.", error);
+
+      if (error.message?.includes("evento_encerrado")) {
+        return {
+          erro: "Este evento já foi encerrado e não pode ser reaberto, para preservar presenças e certificados já emitidos.",
+        };
+      }
+
       return { erro: traduzirErroBanco(error.code) };
     }
 

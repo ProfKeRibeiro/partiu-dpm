@@ -32,7 +32,7 @@ function formatarDataCertificado(data: string | null) {
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
-    month: "long",
+    month: "2-digit",
     year: "numeric",
     timeZone: "America/Sao_Paulo",
   }).format(valor);

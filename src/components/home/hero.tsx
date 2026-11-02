@@ -10,7 +10,6 @@ import {
   IconeSetaDireita,
   IconeUsuarios,
 } from "@/components/ui/icons";
-import { eventoRealizado } from "@/lib/evento-utils";
 import { listarEventosPublicados } from "@/lib/eventos";
 
 async function NumeroEventos() {
@@ -20,12 +19,7 @@ async function NumeroEventos() {
 
   if (erro) return <span>—</span>;
 
-  const agora = new Date();
-  const total = eventos.filter(
-    (evento) => !eventoRealizado(evento, agora),
-  ).length;
-
-  return <span>{String(total).padStart(2, "0")}</span>;
+  return <span>{String(eventos.length).padStart(2, "0")}</span>;
 }
 
 const iconesIndicadores = {
@@ -38,7 +32,7 @@ const iconesIndicadores = {
 export function Hero() {
   const indicadores = [
     {
-      rotulo: "eventos na agenda",
+      rotulo: "eventos realizados e previstos",
       icone: iconesIndicadores.agenda,
       valor: (
         <Suspense

@@ -1,6 +1,6 @@
 # Contrato do banco de dados
 
-> **Status: confirmado e endurecido em 27/10/2026; revisto em 30/10/2026.**
+> **Status: confirmado e endurecido em 27/10/2026; revisto em 02/11/2026.**
 >
 > Migrações aplicadas:
 >
@@ -10,17 +10,20 @@
 > 4. `atualizar_perfil_participante_rpc`
 > 5. `indices_chaves_estrangeiras`
 > 6. `admin_obter_evento` (30/10/2026 — leitura de `link_evento` na edição)
+> 7. `bloquear_reabertura_evento_encerrado` (02/11/2026)
+> 8. `notificacoes_usuario` (02/11/2026 — tabela, RLS e triggers)
 >
-> Migrações preparadas, ainda pendentes de aplicação no Supabase:
-> `docs/migracoes/20261029_publico_alvo_eventos.sql` (públicos detalhados +
-> elegibilidade no banco) e `docs/migracoes/20261029_cor-tema-evento.sql`
-> (coluna `cor_tema`).
+> SQL das duas últimas em
+> `docs/migracoes/20261102_notificacoes-e-bloqueio-reabertura.sql`.
+>
+> As migrações de público-alvo e cor de tema em `docs/migracoes/` já estão
+> refletidas no banco; os arquivos ficam como referência histórica.
 >
 > O banco agora tem **dados reais de teste da organização**: 1 evento
 > (`MongoDB Day`, online), 2 participantes, 2 inscrições confirmadas,
-> 2 presenças e 2 certificados (1 emitido, 1 cancelado). `administradores`
-> tem 1 linha (o admin real). Os dados temporários usados nos testes de
-> integração foram removidos ao final.
+> 2 presenças, 2 certificados (1 emitido, 1 cancelado) e 0 notificações.
+> `administradores` tem 1 linha (o admin real). Os dados temporários usados
+> nos testes de integração foram removidos ao final.
 
 ## Resumo das tabelas
 
@@ -32,8 +35,9 @@
 | `public.presencas` | 2 | Ativa | Uma presença por inscrição. |
 | `public.certificados` | 2 | Ativa | Um certificado por inscrição (1 emitido, 1 cancelado). |
 | `public.administradores` | 1 | Ativa | Fonte de verdade de `eh_admin()`. |
+| `public.notificacoes` | 0 | Ativa | Avisos gerados por trigger; o usuário só lê e marca como lida. |
 
-RLS ativa nas seis tabelas, sem `FORCE ROW LEVEL SECURITY`. O dono e
+RLS ativa nas sete tabelas, sem `FORCE ROW LEVEL SECURITY`. O dono e
 `service_role` continuam ignorando as políticas, como é padrão no Supabase.
 Não há views nem materialized views no schema `public`.
 
@@ -170,6 +174,29 @@ abaixo.
 
 Não existe coluna `ativo`. A presença na tabela é a única condição de admin.
 
+### `public.notificacoes`
+
+| Coluna | Tipo | Nulo | Default | Regra |
+| --- | --- | --- | --- | --- |
+| `id` | `uuid` | Não | `gen_random_uuid()` | PK |
+| `usuario_id` | `uuid` | Não | — | FK `auth.users(id)` `ON DELETE CASCADE` |
+| `tipo` | `text` | Não | — | `inscricao_confirmada`, `inscricao_cancelada`, `lista_espera`, `presenca_registrada`, `certificado_emitido`, `certificado_cancelado` |
+| `titulo` | `text` | Não | — | — |
+| `mensagem` | `text` | Não | — | — |
+| `href` | `text` | Sim | — | Caminho interno de destino |
+| `lida_em` | `timestamptz` | Sim | — | `NULL` = não lida |
+| `created_at` | `timestamptz` | Não | `now()` | — |
+
+Índice parcial `notificacoes_usuario_pendentes_idx` em
+`(usuario_id, created_at DESC) WHERE lida_em IS NULL`, usado pelo contador do
+sino.
+
+As linhas são criadas somente pelos triggers de inscrição, presença e
+certificado. `authenticated` recebe apenas `SELECT` e `UPDATE (lida_em)`; não há
+grant de `INSERT` nem de `DELETE`. A política de `UPDATE` usa
+`usuario_id = auth.uid()`, então nem `id` nem `tipo` podem ser alterados pelo
+cliente.
+
 ## Funções, triggers e RPCs
 
 ### `public.eh_admin()`
@@ -217,6 +244,30 @@ inscricoes`, por linha. Mantém `eventos.inscritos`:
 Trigger `ao_atualizar_updated_at`, `BEFORE UPDATE` em `eventos` e
 `participantes`. Define `updated_at = now()`. `SECURITY DEFINER` com
 `search_path = ''`; `EXECUTE` revogado de `public`, `anon` e `authenticated`.
+
+### `public.impedir_reabertura_evento()`
+
+Trigger `impedir_reabertura_evento`, `BEFORE UPDATE OF status ON eventos`, por
+linha. Levanta a exceção `evento_encerrado` (SQLSTATE `23514`) quando
+`OLD.status = 'encerrado'` e `NEW.status` é diferente. A Server Action
+`salvarEvento` também recusa a alteração antes do `UPDATE`, para devolver uma
+mensagem amigável. `SECURITY DEFINER` com `search_path = ''`; `EXECUTE`
+revogado de `public`.
+
+### Notificações
+
+Três funções `SECURITY DEFINER` com `search_path = ''` alimentam
+`public.notificacoes`:
+
+| Função | Trigger | Quando dispara |
+| --- | --- | --- |
+| `notificar_inscricao()` | `notificar_inscricao` em `inscricoes` | `INSERT`/mudança de `status` para `confirmada`, `lista_espera` ou `cancelada` |
+| `notificar_presenca()` | `notificar_presenca` em `presencas` | Presença passa de `false`/ausente para `true` |
+| `notificar_certificado()` | `notificar_certificado` em `certificados` | Certificado entra em `emitido` ou passa para `cancelado` |
+
+A mensagem usa o título do evento e o `href` aponta para `/conta/inscricoes` ou
+`/conta/certificados`. `EXECUTE` revogado de `public`, `anon` e
+`authenticated`; só o trigger executa.
 
 ### `public.inscrever_em_evento(p_evento_id uuid)`
 
@@ -401,6 +452,8 @@ devolve `NULL`. O painel usa `obterEventoParaEdicao`
 | `eventos` | Eventos publicados são públicos | `SELECT` | `anon` | `status = 'publicado'` |
 | `eventos` | Eventos publicados ou admin | `SELECT` | `authenticated` | `status = 'publicado' OR eh_admin()` |
 | `inscricoes` | Consultar próprias inscrições ou administrar | `SELECT` | `authenticated` | `participante_id = auth.uid() OR eh_admin()` |
+| `notificacoes` | Participante lê suas notificações | `SELECT` | `authenticated` | `usuario_id = auth.uid()` |
+| `notificacoes` | Participante marca suas notificações como lidas | `UPDATE` | `authenticated` | `usuario_id = auth.uid()` em `USING` e `WITH CHECK` |
 | `participantes` | Atualizar próprio perfil ou administrar | `UPDATE` | `authenticated` | `id = auth.uid() OR eh_admin()` |
 | `participantes` | Consultar próprio perfil ou administrar | `SELECT` | `authenticated` | `id = auth.uid() OR eh_admin()` |
 | `participantes` | Criar próprio perfil | `INSERT` | `authenticated` | `id = auth.uid()` (sem grant direto; trigger é o caminho) |
@@ -423,6 +476,7 @@ escrita.
 | `presencas` | Nenhum | `SELECT`, `INSERT`, `UPDATE`, `DELETE` (admin via RLS) |
 | `certificados` | Nenhum | `SELECT`, `INSERT`, `UPDATE`, `DELETE` (admin via RLS) |
 | `administradores` | Nenhum | `SELECT` |
+| `notificacoes` | Nenhum | `SELECT` + `UPDATE` apenas da coluna `lida_em` |
 
 `anon` recebe `SELECT` apenas nestas colunas de `eventos`:
 
@@ -442,7 +496,7 @@ status, imagem_url, cor_tema, inscritos
 painel).
 
 `TRUNCATE`, `REFERENCES` e `TRIGGER` foram revogados de `anon` e
-`authenticated` nas seis tabelas.
+`authenticated` nas sete tabelas.
 
 ### Funções
 
@@ -452,6 +506,10 @@ painel).
 | `criar_perfil_participante()` | Não | Não |
 | `atualizar_contagem_inscritos()` | Não | Não |
 | `definir_updated_at()` | Não | Não |
+| `impedir_reabertura_evento()` | Não | Não |
+| `notificar_inscricao()` | Não | Não |
+| `notificar_presenca()` | Não | Não |
+| `notificar_certificado()` | Não | Não |
 | `inscrever_em_evento(uuid)` | Não | Sim |
 | `cancelar_inscricao(uuid)` | Não | Sim |
 | `atualizar_perfil_participante(...)` | Não | Sim |

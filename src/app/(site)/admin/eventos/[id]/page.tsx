@@ -531,11 +531,6 @@ async function AdminEventoConteudo({
             )}
           </section>
 
-          <p className="mt-4 text-xs leading-relaxed text-muted">
-            Ações administrativas são validadas no banco por <code>eh_admin()</code>.
-            Alterar o status de uma inscrição atualiza o contador público de
-            vagas.
-          </p>
         </Container>
       </main>
     </>

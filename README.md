@@ -16,7 +16,10 @@ O projeto está funcional de ponta a ponta no ambiente local:
 - presença, emissão/cancelamento de certificado e alteração de status;
 - validação pública de certificado por código digitado **ou** pelo leitor de
   QR code na câmera (o QR é impresso no próprio certificado);
-- atalho “Administração” no menu do perfil quando o usuário é admin.
+- notificações de inscrição, presença e certificado no sino da área logada,
+  com marcação de leitura individual ou em lote;
+- atalho “Administração” no menu do perfil quando o usuário é admin;
+- datas exibidas no padrão brasileiro `dd/mm/aaaa`.
 
 ## Stack
 
@@ -245,10 +248,13 @@ docs/
   **Início** (`/`, volta ao site público), **Eventos**, **Minhas inscrições** e
   **Meus certificados**. O selo do topo leva a `/conta`; o perfil e a saída
   ficam no menu do avatar.
-- A topbar tem busca de eventos (GET para `/conta/eventos`), sino com indicador
-  de inscrições confirmadas e menu da conta com **Meu perfil** e **Sair**.
-  Inscrições e certificados não são repetidos no menu, porque já estão na
-  sidebar.
+- A topbar tem busca de eventos (GET para `/conta/eventos`) e sino com
+  notificações reais do participante: contador de não lidas, lista das mais
+  recentes, abertura do destino ao clicar e **Marcar todas como lidas**. Cada
+  item é gerado no banco pelos triggers de inscrição, presença e certificado.
+- O menu da conta traz **Minha área**, **Meu perfil**, **Administração** (só
+  para admin) e **Sair**. Inscrições e certificados não são repetidos no menu,
+  porque já estão na sidebar.
 - O painel `/conta` combina hero navy sobre a fachada da ETEC, seta vermelha da
   marca, números de inscrições/certificados, cards de próximos eventos e a lista
   “Seus próximos eventos”. Não há card de perfil nem banner de CTA duplicado.
@@ -289,8 +295,13 @@ docs/
   `src/components/admin/formulario-evento.tsx` e a Server Action
   `salvarEvento` (`src/lib/admin/eventos-acoes.ts`). A edição lê o evento via
   SELECT por colunas + RPC `admin_obter_evento(uuid)` (necessária porque
-  `authenticated` não tem `SELECT` em `link_evento`). O botão “Cancelar
-  evento” usa `BotaoExcluirEvento`.
+  `authenticated` não tem `SELECT` em `link_evento`). O rodapé do formulário
+  tem **Cancelar**, que volta ao painel ou à página do evento, e o botão
+  “Cancelar evento” usa `BotaoExcluirEvento`.
+- Evento com status `encerrado` não pode voltar a outro status: o formulário
+  desabilita o select, a Server Action recusa a alteração e o trigger
+  `impedir_reabertura_evento` bloqueia qualquer `UPDATE` direto no banco. Isso
+  preserva presenças e certificados já emitidos.
 - Em `/admin/eventos/[id]`: lista inscritos com e-mail, curso, série,
   instituição, presença e certificado.
 - Ações: marcar/desmarcar presença, emitir/reemitir certificado, cancelar
@@ -302,7 +313,7 @@ docs/
 
 - A emissão exige inscrição `confirmada` e presença registrada.
 - Cada certificado tem um `codigo_validacao` UUID público.
-- `/certificados` raz duas formas de validar: digitar o código **ou** escanear
+- `/certificados` traz duas formas de validar: digitar o código **ou** escanear
   o QR code com a câmera (leitor em `src/components/certificados/leitor-qr.tsx`,
   com `jsqr` + `getUserMedia`). O leitor aceita UUID puro ou a URL completa do
   QR e funciona em HTTPS/localhost.
