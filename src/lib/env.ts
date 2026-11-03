@@ -48,12 +48,17 @@ function urlDaVercel() {
 
 function resolverSiteUrl() {
   const valor = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const vercel = urlDaVercel();
 
-  if (ehUrlValida(valor)) {
+  /* Se a variável ainda apontar para localhost num ambiente da Vercel, usa o
+   * domínio real: links de e-mail nunca devem levar a localhost em produção. */
+  const ehLocal = valor ? /localhost|127\.0\.0\.1/.test(valor) : false;
+
+  if (ehUrlValida(valor) && !(ehLocal && vercel)) {
     return valor.replace(/\/$/, "");
   }
 
-  return urlDaVercel() ?? "http://localhost:3000";
+  return vercel ?? "http://localhost:3000";
 }
 
 export const siteUrl = resolverSiteUrl();
