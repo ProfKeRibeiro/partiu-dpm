@@ -44,14 +44,14 @@ if (supabaseUrl) {
 const contentSecurityPolicy = [
   "default-src 'self'",
   process.env.NODE_ENV === "production"
-    ? "script-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org"
-    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
-  "style-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
-  "img-src 'self' data: blob: https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
-  "font-src 'self' data: https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
-  "connect-src 'self' https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
+    ? "script-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://cdn.userway.org https://*.userway.org"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://cdn.userway.org https://*.userway.org",
+  "style-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://cdn.userway.org https://*.userway.org",
+  "img-src 'self' data: blob: https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://cdn.userway.org https://*.userway.org https://api.userway.org",
+  "font-src 'self' data: https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://cdn.userway.org https://*.userway.org",
+  "connect-src 'self' https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://api.userway.org https://*.userway.org",
   "media-src 'self' blob: https://vlibras.gov.br https://*.vlibras.gov.br",
-  "frame-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br",
+  "frame-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br https://*.userway.org",
   "worker-src 'self' blob:",
   "frame-ancestors 'self'",
   "object-src 'none'",
