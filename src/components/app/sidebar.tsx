@@ -121,15 +121,24 @@ export function Sidebar({
         ) : null}
 
         <div
-          className="pointer-events-none relative -mb-5 mt-3 -mx-3 aspect-[177/213] max-h-[30vh] w-[calc(100%+1.5rem)] overflow-hidden opacity-90"
+          className="pointer-events-none relative -mx-3 -mb-5 mt-3 aspect-[177/213] max-h-[30vh] w-[calc(100%+1.5rem)] overflow-hidden opacity-90"
           aria-hidden="true"
         >
+          {/* A PNG tem 6 px transparentes à esquerda (177 px de largura, 171 px
+           * de conteúdo). A imagem é ampliada e deslocada para o desenho
+           * encostar nas duas laterais do menu, sem sobra. */}
           <Image
             src="/marca/seta-azul.png"
             alt=""
-            fill
+            width={177}
+            height={213}
             sizes="(max-width: 320px) 86vw, 272px"
-            className="object-cover object-top"
+            className="absolute top-0 max-w-none"
+            style={{
+              width: `${(177 / 171) * 100}%`,
+              height: "auto",
+              left: `${(-6 / 171) * 100}%`,
+            }}
           />
         </div>
       </div>

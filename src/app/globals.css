@@ -229,3 +229,17 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------
+ * UserWay: o botão flutuante nasce no topo direito e cobria o link
+ * "Minha área". Empurramos para baixo do cabeçalho em todas as telas.
+ * --------------------------------------------------------------- */
+.userway_buttons_wrapper {
+  top: 100px !important;
+}
+
+@media (max-width: 640px) {
+  .userway_buttons_wrapper {
+    top: 88px !important;
+  }
+}
