@@ -2,7 +2,6 @@ import Link from "next/link";
 import { LogoClara } from "@/components/brand/logo";
 import { Container } from "@/components/ui/container";
 import {
-  IconeCadeado,
   IconeEscudo,
   IconeUsuarios,
 } from "@/components/ui/icons";
@@ -17,7 +16,6 @@ const navegacao = [
 const acesso = [
   { href: "/conta", rotulo: "Minha área", icone: IconeUsuarios },
   { href: "/certificados", rotulo: "Validar certificado", icone: IconeEscudo },
-  { href: "/admin", rotulo: "Administração", icone: IconeCadeado },
 ];
 
 const rotuloSecao =
