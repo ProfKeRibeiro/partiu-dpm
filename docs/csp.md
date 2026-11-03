@@ -8,6 +8,8 @@
 > o shell estático é gerado no build, sem o nonce da requisição, e seus scripts
 > são bloqueados. Evidência e decisão na seção
 > [Tentativa de nonce](#tentativa-de-nonce-03112026).
+> Decisão confirmada pela responsável: manter `'unsafe-inline'` em
+> `script-src` e preservar o PPR, em vez de tornar todas as páginas dinâmicas.
 
 ## Política final
 
