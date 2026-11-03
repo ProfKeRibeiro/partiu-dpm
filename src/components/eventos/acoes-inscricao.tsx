@@ -3,14 +3,20 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useActionState } from "react";
-import { IconeCheck, IconeSetaDiagonal } from "@/components/ui/icons";
+import { IconeAlerta, IconeCheck, IconeSetaDiagonal } from "@/components/ui/icons";
+import { formatarDataHora } from "@/lib/format";
 import {
   cancelarInscricao,
   inscreverEmEvento,
+  responderConvite,
   type EstadoInscricao,
 } from "@/lib/inscricoes/acoes";
 
-type StatusInscricao = "confirmada" | "cancelada" | "lista_espera";
+type StatusInscricao =
+  | "confirmada"
+  | "cancelada"
+  | "lista_espera"
+  | "aguardando_confirmacao";
 
 export function AcoesInscricao({
   eventoId,
@@ -21,6 +27,8 @@ export function AcoesInscricao({
   eventoIniciado,
   destinoLogin,
   filaEspera = 0,
+  posicaoFila = null,
+  conviteExpiraEm = null,
 }: {
   eventoId: string;
   situacao: "aberta" | "em-breve" | "encerrada" | "lotado";
@@ -30,6 +38,8 @@ export function AcoesInscricao({
   eventoIniciado: boolean;
   destinoLogin: string;
   filaEspera?: number;
+  posicaoFila?: number | null;
+  conviteExpiraEm?: string | null;
 }) {
   const [estadoInscricao, acaoInscrever, inscrevendo] = useActionState<
     EstadoInscricao,
@@ -39,6 +49,8 @@ export function AcoesInscricao({
     EstadoInscricao,
     FormData
   >(cancelarInscricao, null);
+  const [estadoConvite, acaoResponderConvite, respondendoConvite] =
+    useActionState<EstadoInscricao, FormData>(responderConvite, null);
   const [modalCancelamento, setModalCancelamento] = useState(false);
   const formCancelar = useRef<HTMLFormElement>(null);
 
@@ -194,11 +206,83 @@ export function AcoesInscricao({
     );
   }
 
+  if (inscricao?.status === "aguardando_confirmacao") {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl border border-brick bg-ember-50 px-4 py-3">
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-molten">
+            <IconeAlerta className="h-4 w-4" />
+            Vaga reservada para você
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-ink">
+            Abriu uma vaga!
+            {conviteExpiraEm
+              ? ` Confirme até ${formatarDataHora(conviteExpiraEm)}.`
+              : " Confirme sua participação."}{" "}
+            Se o prazo passar, a vaga vai automaticamente para a próxima pessoa
+            da lista de espera.
+          </p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <form action={acaoResponderConvite}>
+            <input type="hidden" name="inscricao_id" value={inscricao.id} />
+            <input type="hidden" name="evento_id" value={eventoId} />
+            <input type="hidden" name="aceitar" value="true" />
+            <button
+              type="submit"
+              disabled={respondendoConvite}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-deep px-4 text-xs font-semibold text-papaya transition-colors hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <IconeCheck className="h-4 w-4" />
+              {respondendoConvite ? "Enviando..." : "Confirmar minha vaga"}
+            </button>
+          </form>
+
+          <form action={acaoResponderConvite}>
+            <input type="hidden" name="inscricao_id" value={inscricao.id} />
+            <input type="hidden" name="evento_id" value={eventoId} />
+            <input type="hidden" name="aceitar" value="false" />
+            <button
+              type="submit"
+              disabled={respondendoConvite}
+              className="inline-flex h-11 w-full items-center justify-center rounded-full border border-deep/20 bg-white px-4 text-xs font-semibold text-deep transition-colors hover:bg-papaya focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Não vou poder ir
+            </button>
+          </form>
+        </div>
+
+        {estadoConvite ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className={`rounded-xl px-3 py-2 text-xs leading-relaxed ${
+              estadoConvite.ok
+                ? "bg-steel-50 text-deep"
+                : "bg-ember-50 text-molten"
+            }`}
+          >
+            {estadoConvite.mensagem}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   if (inscricao?.status === "lista_espera") {
     return (
-      <div className="rounded-xl border border-brick/30 bg-papaya px-4 py-3 text-sm leading-relaxed text-molten">
-        Você está na lista de espera deste evento. A organização avisará se uma
-        vaga for liberada.
+      <div className="space-y-2 rounded-xl border border-brick/30 bg-papaya px-4 py-3 text-sm leading-relaxed text-molten">
+        <p className="font-semibold">
+          Você está na lista de espera
+          {posicaoFila ? ` — ${posicaoFila}º da fila` : ""}.
+        </p>
+        <p className="text-xs leading-relaxed text-ink">
+          Se uma vaga abrir, você recebe um e-mail e um aviso no sino do portal
+          com um prazo para confirmar (24 horas, ou 6 horas se o evento estiver
+          próximo). Se o prazo passar sem confirmação, a vaga vai para a próxima
+          pessoa da fila.
+        </p>
       </div>
     );
   }

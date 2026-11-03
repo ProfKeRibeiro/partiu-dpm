@@ -68,6 +68,53 @@ function normalizarModalidade(valor: unknown): Modalidade {
   return "presencial";
 }
 
+export type ConvocacaoAdmin = {
+  id: string;
+  inscricaoId: string;
+  participante: string | null;
+  convocadoEm: string;
+  expiraEm: string;
+  respondidoEm: string | null;
+  resultado: "pendente" | "confirmado" | "recusado" | "expirado";
+};
+
+export async function listarConvocacoesAdmin(
+  eventoId: string,
+): Promise<ConvocacaoAdmin[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("convocacoes")
+    .select(
+      `id, inscricao_id, convocado_em, expira_em, respondido_em, resultado,
+       participantes (nome_completo)`,
+    )
+    .eq("evento_id", eventoId)
+    .order("convocado_em", { ascending: false });
+
+  if (error) {
+    console.error("[partiu-dpm] Falha ao listar convocações.", error);
+    return [];
+  }
+
+  return (data ?? []).map((registro) => {
+    const participante = Array.isArray(registro.participantes)
+      ? registro.participantes[0]
+      : registro.participantes;
+
+    return {
+      id: registro.id as string,
+      inscricaoId: registro.inscricao_id as string,
+      participante:
+        (participante?.nome_completo as string | undefined) ?? null,
+      convocadoEm: registro.convocado_em as string,
+      expiraEm: registro.expira_em as string,
+      respondidoEm: (registro.respondido_em as string | null) ?? null,
+      resultado: registro.resultado as ConvocacaoAdmin["resultado"],
+    };
+  });
+}
+
 export async function listarEventosAdmin(): Promise<EventoAdmin[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase

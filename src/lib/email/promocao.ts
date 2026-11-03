@@ -1,34 +1,39 @@
 import "server-only";
 
 import { after } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { enviarAvisoEvento } from "@/lib/email/avisos";
 import { emailConfigurado } from "@/lib/email/enviar";
 
+type ClienteSupabase = SupabaseClient;
+
 /**
- * Envia o e-mail de inscrição confirmada para quem acabou de ser promovido da
- * lista de espera.
+ * Envia o e-mail de convocação para quem acabou de ganhar uma vaga.
  *
- * A promoção acontece dentro da RPC de cancelamento, então o participante não é
- * o usuário da requisição: os dados são lidos com a chave `service_role`, no
- * servidor. O controle de repetição usa `registrar_aviso_email` com a mesma
- * chave, que tem permissão de executar a função.
+ * A convocação nasce dentro de uma RPC (cancelamento, recusa ou expiração), e o
+ * destinatário não é o usuário da requisição: os dados são lidos com a chave
+ * `service_role`, no servidor. O controle de repetição usa
+ * `registrar_aviso_email` com a mesma chave.
  */
-export async function agendarAvisoPromovido(inscricaoId: string) {
+export async function agendarConvite(
+  inscricaoId: string,
+  prazo: string | null,
+) {
   if (!emailConfigurado()) return;
 
   const admin = createSupabaseAdminClient();
 
   if (!admin) {
     console.warn(
-      "[partiu-dpm] SUPABASE_SERVICE_ROLE_KEY ausente: aviso do promovido não enviado.",
+      "[partiu-dpm] SUPABASE_SERVICE_ROLE_KEY ausente: convite não enviado.",
     );
     return;
   }
 
   const { data: podeEnviar } = await admin.rpc("registrar_aviso_email", {
     p_inscricao_id: inscricaoId,
-    p_tipo: "inscrito",
+    p_tipo: "convite",
     p_janela_segundos: 300,
   });
 
@@ -59,13 +64,14 @@ export async function agendarAvisoPromovido(inscricaoId: string) {
   const email = usuario.data.user?.email;
 
   if (!evento || !email) {
-    console.warn("[partiu-dpm] Promovido sem e-mail para avisar.");
+    console.warn("[partiu-dpm] Convocado sem e-mail para avisar.");
     return;
   }
 
   const dados = {
     nome: (participante?.nome_completo as string | null) ?? "",
     email,
+    prazo,
     evento: {
       id: evento.id as string,
       titulo: evento.titulo as string,
@@ -78,6 +84,27 @@ export async function agendarAvisoPromovido(inscricaoId: string) {
   };
 
   after(async () => {
-    await enviarAvisoEvento({ tipo: "inscrito", dados });
+    await enviarAvisoEvento({ tipo: "convite", dados });
   });
+}
+
+/** Expira convites vencidos e avisa quem for convocado na sequência. */
+export async function expirarConvitesEAvisar(supabase: ClienteSupabase) {
+  const { data, error } = await supabase.rpc("expirar_convites");
+
+  if (error) {
+    console.warn("[partiu-dpm] Falha ao expirar convites.", error.message);
+    return;
+  }
+
+  const novos = (data?.novos ?? []) as Array<{
+    inscricao_id?: string;
+    expira_em?: string;
+  }>;
+
+  for (const convite of novos) {
+    if (convite.inscricao_id) {
+      await agendarConvite(convite.inscricao_id, convite.expira_em ?? null);
+    }
+  }
 }

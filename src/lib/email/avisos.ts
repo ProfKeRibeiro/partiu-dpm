@@ -3,13 +3,14 @@ import "server-only";
 import { siteUrl } from "@/lib/env";
 import { obterCargaHorariaEmHoras } from "@/lib/certificados/consultas";
 import { ROTULOS_MODALIDADE } from "@/lib/evento-utils";
-import { formatarDataCurta, formatarHorario } from "@/lib/format";
+import { formatarDataCurta, formatarDataHora, formatarHorario } from "@/lib/format";
 import { enviarEmail, type ResultadoEnvio } from "@/lib/email/enviar";
 
 export type AvisoTipo =
   | "inscrito"
   | "cancelado"
   | "lista_espera"
+  | "convite"
   | "presenca"
   | "certificado";
 
@@ -28,6 +29,8 @@ export type DadosAviso = {
   email: string;
   evento: EventoDoEmail;
   codigoValidacao?: string | null;
+  prazo?: string | null;
+  posicao?: number | null;
 };
 
 /* Identidade visual dos e-mails: vermelho escuro no cabeçalho, vermelho nos
@@ -136,12 +139,20 @@ const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
     titulo: "Você está na lista de espera",
     abertura: (saudacao, evento) =>
       `Olá, ${saudacao}! Recebemos sua inscrição para o evento ${evento.titulo}. No momento, todas as vagas disponíveis estão preenchidas, por isso sua inscrição foi registrada na lista de espera.`,
-    linhas: (d) => [
-      ["Evento", d.evento.titulo],
-      ["Data", dataDoEvento(d.evento)],
-      ["Horário", horarioDoEvento(d.evento)],
-      ["Status", "Lista de espera"],
-    ],
+    linhas: (d) => {
+      const base: Array<[string, string]> = [
+        ["Evento", d.evento.titulo],
+        ["Data", dataDoEvento(d.evento)],
+        ["Horário", horarioDoEvento(d.evento)],
+        ["Status", "Lista de espera"],
+      ];
+
+      if (d.posicao) {
+        base.push(["Posição na fila", `${d.posicao}º`]);
+      }
+
+      return base;
+    },
     paragrafos: [
       "Caso uma vaga seja disponibilizada, você poderá receber uma notificação sobre a possibilidade de confirmação da inscrição.",
       "Fique atento(a) ao seu e-mail!",
@@ -150,8 +161,35 @@ const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
     botao: "Acompanhar minha inscrição",
     url: `${siteUrl}/conta/inscricoes`,
   }),
-  presenca: (dados) => ({
-    assunto: `Presença confirmada – ${dados.evento.titulo}`,
+  convite: (dados) => ({
+    assunto: `Surgiu uma vaga – ${dados.evento.titulo}`,
+    titulo: "Surgiu uma vaga para você",
+    abertura: (saudacao, evento) =>
+      `Olá, ${saudacao}! Uma vaga abriu em ${evento.titulo} e ela está reservada para você.`,
+    linhas: (d) => {
+      const base: Array<[string, string]> = [
+        ["Evento", d.evento.titulo],
+        ["Data", dataDoEvento(d.evento)],
+        ["Horário", horarioDoEvento(d.evento)],
+        ["Modalidade", modalidadeDoEvento(d.evento)],
+        ["Local", localDoEvento(d.evento)],
+      ];
+
+      if (d.prazo) {
+        base.push(["Confirme até", formatarDataHora(d.prazo)]);
+      }
+
+      return base;
+    },
+    paragrafos: [
+      "Sua vaga fica reservada só até o prazo acima. Se ele passar sem confirmação, a vaga vai automaticamente para a próxima pessoa da lista de espera.",
+      "Confirme na área do participante em um clique.",
+    ],
+    fechamento: "Não deixe para depois — essa vaga pode ser sua!",
+    botao: "Confirmar minha vaga",
+    url: `${siteUrl}/conta/inscricoes`,
+  }),
+  presenca: (dados) => ({    assunto: `Presença confirmada – ${dados.evento.titulo}`,
     titulo: "Presença confirmada",
     abertura: (saudacao, evento) =>
       `Olá, ${saudacao}! Sua presença no evento ${evento.titulo} foi registrada pela organização.`,

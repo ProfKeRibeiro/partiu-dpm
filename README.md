@@ -292,12 +292,15 @@ docs/
   botão **Reenviar e-mail** usa janela zero e sempre envia.
 - Evento lotado oferece **Entrar na lista de espera** ao participante (a RPC
   `inscrever_em_evento` grava o status `lista_espera` quando as vagas acabaram).
-- Quando alguém cancela, `promover_lista_espera` confirma automaticamente a
-  próxima pessoa da fila: o trigger cria a notificação no sino e o app envia o
-  e-mail de inscrição confirmada (com `SUPABASE_SERVICE_ROLE_KEY` para ler o
-  contato do promovido no servidor). O mesmo vale quando o admin cancela pelo
-  painel. Antes de cancelar com fila ativa, a página do evento abre um modal
-  avisando que a vaga vai para a próxima pessoa.
+- Quando alguém cancela, `convocar_lista_espera` reserva a vaga para a próxima
+  pessoa da fila: o status vira `aguardando_confirmacao`, ela recebe e-mail e
+  aviso no sino, e o prazo é de 24h (6h se o evento estiver a menos de 48h).
+  Aceitar confirma; recusar ou deixar expirar chama a próxima da fila.
+- Ao entrar na lista de espera a pessoa vê a explicação do prazo e a sua
+  **posição na fila**, também incluída no e-mail de confirmação da espera.
+- O painel do evento tem o **Histórico de convocações**: quem foi chamado,
+  quando recebeu o aviso, o prazo, a resposta e se confirmou, recusou ou deixou
+  expirar.
 - **O remetente precisa estar verificado no Brevo** (Senders & Domains →
   Senders). Se o Brevo recusar por “sender not valid”, a mensagem aparece em
   Brevo → Transactional → Logs e nada chega ao participante. Certificado já

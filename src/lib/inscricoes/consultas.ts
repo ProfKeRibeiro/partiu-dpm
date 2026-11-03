@@ -5,12 +5,17 @@ import { isSupabaseConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Modalidade } from "@/types/evento";
 
-export type StatusInscricao = "confirmada" | "cancelada" | "lista_espera";
+export type StatusInscricao =
+  | "confirmada"
+  | "cancelada"
+  | "lista_espera"
+  | "aguardando_confirmacao";
 
 export type InscricaoDoUsuario = {
   id: string;
   status: StatusInscricao;
   dataInscricao: string;
+  conviteExpiraEm: string | null;
   evento: {
     id: string;
     titulo: string;
@@ -32,8 +37,13 @@ export type InscricaoDoUsuario = {
 export type ContextoEvento = {
   autenticado: boolean;
   nome: string | null;
-  inscricao: { id: string; status: StatusInscricao } | null;
+  inscricao: {
+    id: string;
+    status: StatusInscricao;
+    conviteExpiraEm: string | null;
+  } | null;
   linkAcesso: string | null;
+  posicaoFila: number | null;
 };
 
 function primeiro<T>(valor: T | T[] | null | undefined): T | null {
@@ -43,6 +53,7 @@ function primeiro<T>(valor: T | T[] | null | undefined): T | null {
 
 function normalizarStatus(valor: unknown): StatusInscricao {
   if (valor === "cancelada" || valor === "lista_espera") return valor;
+  if (valor === "aguardando_confirmacao") return "aguardando_confirmacao";
   return "confirmada";
 }
 
@@ -71,7 +82,7 @@ export const listarMinhasInscricoes = cache(
   const { data, error } = await supabase
     .from("inscricoes")
     .select(
-      `id, status, data_inscricao,
+      `id, status, data_inscricao, convite_expira_em,
        eventos (id, titulo, data_inicio, data_fim, modalidade, local_evento, imagem_url, status),
        presencas (presente, data_registro),
        certificados (status, codigo_validacao, data_emissao)`,
@@ -129,6 +140,7 @@ export const listarMinhasInscricoes = cache(
       id: registro.id as string,
       status: normalizarStatus(registro.status),
       dataInscricao: registro.data_inscricao as string,
+      conviteExpiraEm: (registro.convite_expira_em as string | null) ?? null,
       evento: evento
         ? {
             id: evento.id,
@@ -171,6 +183,18 @@ export const contarFilaEspera = cache(async (eventoId: string) => {
   return typeof data === "number" ? data : 0;
 });
 
+/** Posição (1 = próximo) na fila de espera do evento. */
+const posicaoNaFila = cache(async (inscricaoId: string) => {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("posicao_lista_espera", {
+    p_inscricao_id: inscricaoId,
+  });
+
+  if (error) return null;
+
+  return typeof data === "number" ? data : null;
+});
+
 export async function obterContextoEvento(
   eventoId: string,
 ): Promise<ContextoEvento> {
@@ -179,6 +203,7 @@ export async function obterContextoEvento(
     nome: null,
     inscricao: null,
     linkAcesso: null,
+    posicaoFila: null,
   };
 
   if (!isSupabaseConfigured) return vazio;
@@ -192,7 +217,7 @@ export async function obterContextoEvento(
     await Promise.all([
       supabase
         .from("inscricoes")
-        .select("id, status")
+        .select("id, status, convite_expira_em")
         .eq("evento_id", eventoId)
         .eq("participante_id", userData.user.id)
         .maybeSingle(),
@@ -204,15 +229,24 @@ export async function obterContextoEvento(
         .maybeSingle(),
     ]);
 
+  const status = inscricao ? normalizarStatus(inscricao.status) : null;
+  const posicaoFila =
+    inscricao && status === "lista_espera"
+      ? await posicaoNaFila(inscricao.id as string)
+      : null;
+
   return {
     autenticado: true,
     nome: perfil?.nome_completo ?? userData.user.email ?? null,
     inscricao: inscricao
       ? {
           id: inscricao.id as string,
-          status: normalizarStatus(inscricao.status),
+          status: status as StatusInscricao,
+          conviteExpiraEm:
+            (inscricao.convite_expira_em as string | null) ?? null,
         }
       : null,
     linkAcesso: typeof link === "string" && link.trim() ? link : null,
+    posicaoFila,
   };
 }

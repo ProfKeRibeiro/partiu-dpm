@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { emailConfigurado } from "@/lib/email/enviar";
 import { enviarAvisoEvento, type AvisoTipo } from "@/lib/email/avisos";
-import { agendarAvisoPromovido } from "@/lib/email/promocao";
+import { agendarConvite, expirarConvitesEAvisar } from "@/lib/email/promocao";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const REGEX_UUID =
@@ -24,6 +24,12 @@ const MENSAGENS: Record<string, string> = {
   duplicado: "Você já está inscrito neste evento.",
   lotado: "As vagas deste evento acabaram.",
   lista_espera: "Você já está na lista de espera deste evento.",
+  convite_pendente:
+    "Você tem uma vaga reservada. Confirme ou recuse o convite na sua área.",
+  confirmado: "Vaga confirmada! Nos vemos no evento.",
+  recusado: "Tudo certo. A vaga foi liberada para a próxima pessoa da fila.",
+  convite_expirado: "O prazo para confirmar esta vaga expirou.",
+  sem_convite: "Este convite não está mais ativo.",
   inscricoes_encerradas: "O período de inscrições foi encerrado.",
   inscricoes_em_breve: "As inscrições ainda não abriram.",
   publico_incompativel:
@@ -109,12 +115,23 @@ async function agendarAviso(
   const para = usuario.email;
   const nome = participante?.nome_completo?.trim() || "";
 
+  let posicao: number | null = null;
+
+  if (tipo === "lista_espera") {
+    const { data } = await supabase.rpc("posicao_lista_espera", {
+      p_inscricao_id: inscricaoId,
+    });
+
+    posicao = typeof data === "number" ? data : null;
+  }
+
   after(async () => {
     await enviarAvisoEvento({
       tipo,
       dados: {
         nome,
         email: para,
+        posicao,
         evento: {
           id: evento.id as string,
           titulo: evento.titulo as string,
@@ -149,6 +166,8 @@ export async function inscreverEmEvento(
       mensagem: mensagem("nao_autenticado"),
     };
   }
+
+  await expirarConvitesEAvisar(supabase);
 
   const { data, error } = await supabase.rpc("inscrever_em_evento", {
     p_evento_id: eventoId,
@@ -232,6 +251,8 @@ export async function cancelarInscricao(
     };
   }
 
+  await expirarConvitesEAvisar(supabase);
+
   const { data, error } = await supabase.rpc("cancelar_inscricao", {
     p_inscricao_id: inscricaoId,
   });
@@ -248,8 +269,9 @@ export async function cancelarInscricao(
   const resultado = (data ?? {}) as {
     ok?: boolean;
     codigo?: string;
-    promovido?: boolean;
-    promovido_inscricao_id?: string | null;
+    convocado?: boolean;
+    convocado_inscricao_id?: string | null;
+    convite_expira_em?: string | null;
   };
   const codigo = resultado.codigo ?? "erro";
 
@@ -274,9 +296,82 @@ export async function cancelarInscricao(
       userData.user,
     );
 
-    if (resultado.promovido === true && resultado.promovido_inscricao_id) {
-      await agendarAvisoPromovido(resultado.promovido_inscricao_id);
+    if (resultado.convocado === true && resultado.convocado_inscricao_id) {
+      await agendarConvite(
+        resultado.convocado_inscricao_id,
+        resultado.convite_expira_em ?? null,
+      );
     }
+  }
+
+  revalidar(eventoId);
+
+  return {
+    ok: resultado.ok === true,
+    codigo,
+    mensagem: mensagem(codigo),
+  };
+}
+
+/**
+ * Resposta a um convite de vaga (lista de espera). Aceitar confirma a
+ * inscrição; recusar libera a vaga para a próxima pessoa da fila.
+ */
+export async function responderConvite(
+  _estado: EstadoInscricao,
+  formData: FormData,
+): Promise<EstadoInscricao> {
+  const inscricaoId = texto(formData, "inscricao_id");
+  const eventoId = texto(formData, "evento_id") || null;
+  const aceitar = texto(formData, "aceitar") === "true";
+
+  if (!REGEX_UUID.test(inscricaoId)) {
+    return { ok: false, codigo: "invalido", mensagem: "Convite inválido." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+
+  if (!userData.user) {
+    return {
+      ok: false,
+      codigo: "nao_autenticado",
+      mensagem: mensagem("nao_autenticado"),
+    };
+  }
+
+  await expirarConvitesEAvisar(supabase);
+
+  const { data, error } = await supabase.rpc("responder_convite", {
+    p_inscricao_id: inscricaoId,
+    p_aceitar: aceitar,
+  });
+
+  if (error) {
+    console.error("[partiu-dpm] Falha ao responder convite.", error);
+    return {
+      ok: false,
+      codigo: "erro",
+      mensagem: "Não foi possível responder agora. Tente novamente.",
+    };
+  }
+
+  const resultado = (data ?? {}) as {
+    ok?: boolean;
+    codigo?: string;
+    proximo?: {
+      convocado?: boolean;
+      inscricao_id?: string | null;
+      expira_em?: string | null;
+    } | null;
+  };
+  const codigo = resultado.codigo ?? "erro";
+
+  if (resultado.proximo?.convocado === true && resultado.proximo.inscricao_id) {
+    await agendarConvite(
+      resultado.proximo.inscricao_id,
+      resultado.proximo.expira_em ?? null,
+    );
   }
 
   revalidar(eventoId);

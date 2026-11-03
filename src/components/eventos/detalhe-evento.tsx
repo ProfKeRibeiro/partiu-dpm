@@ -446,7 +446,8 @@ export async function DetalheEvento({
                     (situacao === "aberta" ||
                       situacao === "lotado" ||
                       contexto.inscricao?.status === "confirmada" ||
-                      contexto.inscricao?.status === "lista_espera") ? (
+                      contexto.inscricao?.status === "lista_espera" ||
+                      contexto.inscricao?.status === "aguardando_confirmacao") ? (
                       <AcoesInscricao
                         eventoId={evento.id}
                         situacao={situacao}
@@ -455,6 +456,8 @@ export async function DetalheEvento({
                         linkAcesso={contexto.linkAcesso}
                         eventoIniciado={eventoIniciado}
                         filaEspera={filaEspera}
+                        posicaoFila={contexto.posicaoFila}
+                        conviteExpiraEm={contexto.inscricao?.conviteExpiraEm}
                         destinoLogin={`/eventos/${evento.id}`}
                       />
                     ) : (

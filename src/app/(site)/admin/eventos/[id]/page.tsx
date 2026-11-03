@@ -23,13 +23,14 @@ import {
 } from "@/lib/admin/acoes";
 import { publicarEvento } from "@/lib/admin/eventos-acoes";
 import {
+  listarConvocacoesAdmin,
   listarInscricoesAdmin,
   obterEventoAdmin,
   obterEventoParaEdicao,
 } from "@/lib/admin/consultas";
 import { usuarioEhAdmin } from "@/lib/auth/sessao";
 import { isSupabaseConfigured } from "@/lib/env";
-import { formatarDataCurta, formatarPeriodo } from "@/lib/format";
+import { formatarDataCurta, formatarDataHora, formatarPeriodo } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Gerenciar inscrições",
@@ -41,8 +42,14 @@ export const instant = false;
 const REGEX_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const ROTULOS_CATEGORIA: Record<string, string> = {
-  aluno: "Aluno",
+const ROTULOS_CONVOCACAO: Record<string, string> = {
+  pendente: "Aguardando resposta",
+  confirmado: "Confirmou",
+  recusado: "Recusou",
+  expirado: "Prazo expirado",
+};
+
+const ROTULOS_CATEGORIA: Record<string, string> = {  aluno: "Aluno",
   servidor: "Servidor",
   externo: "Externo",
   outro: "Outro",
@@ -129,6 +136,7 @@ async function AdminEventoConteudo({
   const consulta = await searchParams;
 
   const inscricoes = await listarInscricoesAdmin(evento.id);
+  const convocacoes = await listarConvocacoesAdmin(evento.id);
 
   const confirmadas = inscricoes.filter(
     (inscricao) => inscricao.status === "confirmada",
@@ -546,6 +554,57 @@ async function AdminEventoConteudo({
                   </tbody>
                 </table>
               </div>
+            )}
+          </section>
+
+          <section className="mt-8 rounded-2xl border border-deep/10 bg-white p-5 shadow-suave sm:p-6">
+            <h2 className="font-display text-xl font-semibold tracking-tight text-deep">
+              Histórico de convocações
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted">
+              Quem foi chamado da lista de espera, quando recebeu o aviso e o
+              resultado. Convites valem 24 horas (6 horas se o evento estiver a
+              menos de 48 horas).
+            </p>
+
+            {convocacoes.length === 0 ? (
+              <p className="mt-4 rounded-xl border border-line bg-shell px-4 py-3 text-sm text-muted">
+                Nenhuma convocação neste evento até agora.
+              </p>
+            ) : (
+              <ul className="mt-4 divide-y divide-line">
+                {convocacoes.map((convocacao) => (
+                  <li
+                    key={convocacao.id}
+                    className="flex flex-wrap items-center justify-between gap-2 py-3"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-deep">
+                        {convocacao.participante ?? "Participante"}
+                      </p>
+                      <p className="text-xs leading-relaxed text-muted">
+                        Convocado em {formatarDataHora(convocacao.convocadoEm)} ·
+                        prazo até {formatarDataHora(convocacao.expiraEm)}
+                        {convocacao.respondidoEm
+                          ? ` · resposta em ${formatarDataHora(convocacao.respondidoEm)}`
+                          : ""}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full border px-3 py-1 text-[0.68rem] font-semibold ${
+                        convocacao.resultado === "confirmado"
+                          ? "border-steel-300 bg-steel-50 text-deep"
+                          : convocacao.resultado === "pendente"
+                            ? "border-brick/40 bg-ember-50 text-molten"
+                            : "border-line bg-shell text-muted"
+                      }`}
+                    >
+                      {ROTULOS_CONVOCACAO[convocacao.resultado] ??
+                        convocacao.resultado}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 

@@ -42,6 +42,11 @@ const ABAS: { valor: Filtro; rotulo: string; rotuloCurto: string }[] = [
   { valor: "todas", rotulo: "Todas", rotuloCurto: "Todas" },
   { valor: "confirmada", rotulo: "Confirmadas", rotuloCurto: "Confirmadas" },
   {
+    valor: "aguardando_confirmacao",
+    rotulo: "Vagas reservadas",
+    rotuloCurto: "Reservadas",
+  },
+  {
     valor: "lista_espera",
     rotulo: "Lista de espera",
     rotuloCurto: "Espera",
@@ -51,12 +56,14 @@ const ABAS: { valor: Filtro; rotulo: string; rotuloCurto: string }[] = [
 
 const ROTULOS_STATUS: Record<StatusInscricao, string> = {
   confirmada: "Inscrição confirmada",
+  aguardando_confirmacao: "Vaga reservada — confirme",
   lista_espera: "Lista de espera",
   cancelada: "Inscrição cancelada",
 };
 
 const ESTILOS_STATUS: Record<StatusInscricao, string> = {
   confirmada: "border-steel-300 bg-steel-50 text-deep",
+  aguardando_confirmacao: "border-brick bg-ember-50 text-molten",
   lista_espera: "border-brick/30 bg-papaya text-molten",
   cancelada: "border-line bg-shell text-muted",
 };
@@ -64,6 +71,7 @@ const ESTILOS_STATUS: Record<StatusInscricao, string> = {
 function filtroValido(valor: string | undefined): Filtro {
   if (
     valor === "confirmada" ||
+    valor === "aguardando_confirmacao" ||
     valor === "lista_espera" ||
     valor === "cancelada"
   ) {
@@ -118,6 +126,9 @@ async function ListaInscricoes({
   const contagens: Record<Filtro, number> = {
     todas: inscricoes.length,
     confirmada: inscricoes.filter((item) => item.status === "confirmada").length,
+    aguardando_confirmacao: inscricoes.filter(
+      (item) => item.status === "aguardando_confirmacao",
+    ).length,
     lista_espera: inscricoes.filter((item) => item.status === "lista_espera")
       .length,
     cancelada: inscricoes.filter((item) => item.status === "cancelada").length,

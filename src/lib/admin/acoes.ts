@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { usuarioEhAdmin } from "@/lib/auth/sessao";
 import { agendarAvisoInscricao } from "@/lib/email/disparo";
-import { agendarAvisoPromovido } from "@/lib/email/promocao";
+import { agendarConvite, expirarConvitesEAvisar } from "@/lib/email/promocao";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const REGEX_UUID =
@@ -157,6 +157,8 @@ export async function definirStatusInscricao(formData: FormData) {
 
   const supabase = await createSupabaseServerClient();
 
+  await expirarConvitesEAvisar(supabase);
+
   const { data: anterior } = await supabase
     .from("inscricoes")
     .select("status")
@@ -188,16 +190,20 @@ export async function definirStatusInscricao(formData: FormData) {
   }
 
   const resultadoMudanca = (mudanca ?? {}) as {
-    promovido?: boolean;
-    promovido_inscricao_id?: string | null;
+    convocado?: boolean;
+    convocado_inscricao_id?: string | null;
+    convite_expira_em?: string | null;
   };
 
   if (
     !error &&
-    resultadoMudanca.promovido === true &&
-    resultadoMudanca.promovido_inscricao_id
+    resultadoMudanca.convocado === true &&
+    resultadoMudanca.convocado_inscricao_id
   ) {
-    await agendarAvisoPromovido(resultadoMudanca.promovido_inscricao_id);
+    await agendarConvite(
+      resultadoMudanca.convocado_inscricao_id,
+      resultadoMudanca.convite_expira_em ?? null,
+    );
   }
 
   revalidar(eventoId);
