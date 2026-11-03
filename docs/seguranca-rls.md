@@ -17,6 +17,12 @@
 > 8. `avatars_privado_com_leitura_do_dono`
 > 9. `participantes_sem_update_direto`
 >
+> Migrações de 03/11/2026 (convites e e-mail):
+>
+> 10. `convites_sem_bloqueio`
+> 11. `liberar_aviso_email`
+> 12. `revogar_execute_funcoes_trigger`
+>
 > Elas resolveram a exposição de `link_evento`, a escrita direta em
 > `inscricoes`, os grants amplos, a ausência de trigger de `updated_at` e a
 > falta de RPCs administrativas. Este documento registra o estado real, o que
@@ -39,7 +45,10 @@ Revisão de segurança com testes negativos via API pública e correções aplic
 | `posicao_lista_espera` | Exige dono ou admin; `EXECUTE` revogado de `PUBLIC`/`anon`. |
 | `responder_convite` | `EXECUTE` revogado de `PUBLIC`/`anon` (já validava `auth.uid()`). |
 | `admin_publicar_evento` | `EXECUTE` revogado de `PUBLIC`/`anon` (já validava `eh_admin()`). |
+| `liberar_aviso_email` | `EXECUTE` apenas para `service_role`; remove o registro de deduplicação quando o envio falha. |
+| `encerrar_convocacao_pendente` | `EXECUTE` revogado de todos os papéis; uso interno das RPCs de convite. |
 | `participantes` | `UPDATE` direto revogado de `authenticated`; edição só pela RPC `atualizar_perfil_participante`. |
+| `convocacoes` | Convite pendente é encerrado (`cancelado`) quando a inscrição sai de `aguardando_confirmacao`; `expirar_convites` limpa convites órfãos e `convocar_lista_espera` só bloqueia a fila por convite de inscrição ainda reservada. |
 | Bucket `avatars` | Privado; leitura por `SELECT` apenas para o dono ou admin. O app usa URL assinada de 2 h. |
 
 ### Mudanças no app e na infraestrutura
@@ -58,6 +67,10 @@ Revisão de segurança com testes negativos via API pública e correções aplic
 | Cadastro não confirma vínculo com a escola; qualquer pessoa pode se declarar `aluno`/`servidor`. | Confirmar exigiria lista oficial ou e-mail institucional; custo alto no momento. Reavaliar se eventos restritos passarem a expor conteúdo sensível. |
 | `expirar_convites` continua executável por `authenticated`. | Só age em convites já vencidos; impacto limitado. |
 | Cadastro informa “este e-mail já tem conta”. | Decisão de produto: ajuda a pessoa a lembrar que já se registrou. Risco de enumeração de contas aceito; a recuperação de senha continua neutra. |
+
+Decisões confirmadas pela responsável em 03/11/2026: **A1 e B6 mantidos como
+estão** (cadastro autodeclarado e mensagem de e-mail já cadastrado). Nenhuma
+mudança de código ou banco é necessária; não reabrir sem pedido dela.
 
 ### Pendências
 
@@ -156,6 +169,9 @@ As regras completas, com `using` e `with_check`, estão no documento de schema.
 | `posicao_lista_espera(uuid)` | RPC de leitura restrita | Não executa | Executa (dono/admin) |
 | `responder_convite(uuid, boolean)` | RPC transacional | Não executa | Executa (dono) |
 | `registrar_aviso_email(uuid, text, int)` | RPC de deduplicação | Não executa | Executa (dono/admin/`service_role`) |
+| `liberar_aviso_email(uuid, text)` | RPC de retry de e-mail | Não executa | Não executa (só `service_role`) |
+| `convocar_lista_espera(uuid)` | Convite de vaga | Não executa | Não executa (só `service_role`; chamada interna) |
+| `encerrar_convocacao_pendente(uuid, text)` | Fecha convite | Não executa | Não executa (chamada interna) |
 | `expirar_convites()` | Manutenção | Não executa | Executa (risco aceito) |
 | `admin_publicar_evento(uuid)` | RPC admin | Não executa | Executa (exige `eh_admin()`) |
 
