@@ -19,6 +19,7 @@ type ClienteSupabase = SupabaseClient;
 export async function agendarConvite(
   inscricaoId: string,
   prazo: string | null,
+  imediato = false,
 ) {
   if (!emailConfigurado()) return;
 
@@ -83,6 +84,11 @@ export async function agendarConvite(
     },
   };
 
+  if (imediato) {
+    await enviarAvisoEvento({ tipo: "convite", dados });
+    return;
+  }
+
   after(async () => {
     await enviarAvisoEvento({ tipo: "convite", dados });
   });
@@ -107,4 +113,44 @@ export async function expirarConvitesEAvisar(supabase: ClienteSupabase) {
       await agendarConvite(convite.inscricao_id, convite.expira_em ?? null);
     }
   }
+}
+
+/**
+ * Versão usada pela rotina diária (cron da Vercel): roda sem sessão, com a
+ * chave `service_role`, e envia os e-mails de convocação na hora.
+ */
+export async function expirarConvitesCron() {
+  const admin = createSupabaseAdminClient();
+
+  if (!admin) {
+    return { ok: false, motivo: "sem_chave" as const, novos: 0 };
+  }
+
+  const { data, error } = await admin.rpc("expirar_convites");
+
+  if (error) {
+    console.error("[partiu-dpm] Cron de convites falhou.", error);
+    return { ok: false, motivo: "rpc" as const, novos: 0 };
+  }
+
+  const novos = (data?.novos ?? []) as Array<{
+    inscricao_id?: string;
+    expira_em?: string;
+  }>;
+
+  let enviados = 0;
+
+  for (const convite of novos) {
+    if (!convite.inscricao_id) continue;
+
+    await agendarConvite(
+      convite.inscricao_id,
+      convite.expira_em ?? null,
+      true,
+    );
+
+    enviados += 1;
+  }
+
+  return { ok: true, novos: novos.length, enviados };
 }
