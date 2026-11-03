@@ -443,7 +443,9 @@ export async function DetalheEvento({
                   <div className="tema-inscricao mt-6 border-t border-line pt-6">
                     {!realizado &&
                     (situacao === "aberta" ||
-                      contexto.inscricao?.status === "confirmada") ? (
+                      situacao === "lotado" ||
+                      contexto.inscricao?.status === "confirmada" ||
+                      contexto.inscricao?.status === "lista_espera") ? (
                       <AcoesInscricao
                         eventoId={evento.id}
                         situacao={situacao}

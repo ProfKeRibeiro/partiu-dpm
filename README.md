@@ -276,12 +276,22 @@ docs/
   recentes, abertura do destino ao clicar e **Marcar todas como lidas**. Cada
   item é gerado no banco pelos triggers de inscrição, presença e certificado.
 - Além da notificação no sino, quem se inscreve ou cancela recebe um e-mail com
-  os detalhes do evento (título, tipo, data/hora, modalidade e local), enviado
-  depois da resposta da Server Action com `after()`. O tom muda conforme o caso:
+  os detalhes do evento (data/hora, modalidade e local), enviado depois da
+  resposta da Server Action com `after()`. O tom muda conforme o caso:
   boas-vindas e “te espero lá” na inscrição; “que pena, te aguardamos no próximo
   evento” no cancelamento. O envio usa `BREVO_API_KEY` (prioridade) ou
   `RESEND_API_KEY`, com `EMAIL_REMETENTE` verificado no provedor; sem essas
   variáveis a inscrição continua funcionando e o envio é apenas ignorado.
+- Os e-mails seguem o padrão da Etec DPM: cabeçalho `#780000`, destaques e
+  botões `#C1121F`, fundo `#F5F5F5`, conteúdo em cartão branco e rodapé com
+  “Equipe Partiu DPM / Etec DPM”. Cada tipo (inscrição, cancelamento, lista de
+  espera, presença e certificado) tem texto próprio.
+- `public.avisos_email` registra cada aviso enviado: a função
+  `registrar_aviso_email` ignora repetições dentro de 5 minutos, então atualizar
+  a página ou repetir uma operação já concluída não gera segundo e-mail. O
+  botão **Reenviar e-mail** usa janela zero e sempre envia.
+- Evento lotado oferece **Entrar na lista de espera** ao participante (a RPC
+  `inscrever_em_evento` grava o status `lista_espera` quando as vagas acabaram).
 - **O remetente precisa estar verificado no Brevo** (Senders & Domains →
   Senders). Se o Brevo recusar por “sender not valid”, a mensagem aparece em
   Brevo → Transactional → Logs e nada chega ao participante. Certificado já

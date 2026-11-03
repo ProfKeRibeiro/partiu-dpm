@@ -1,8 +1,9 @@
 import "server-only";
 
 import { siteUrl } from "@/lib/env";
-import { rotuloTipo, ROTULOS_MODALIDADE } from "@/lib/evento-utils";
-import { formatarPeriodo } from "@/lib/format";
+import { obterCargaHorariaEmHoras } from "@/lib/certificados/consultas";
+import { ROTULOS_MODALIDADE } from "@/lib/evento-utils";
+import { formatarDataCurta, formatarHorario } from "@/lib/format";
 import { enviarEmail, type ResultadoEnvio } from "@/lib/email/enviar";
 
 export type AvisoTipo =
@@ -29,6 +30,15 @@ export type DadosAviso = {
   codigoValidacao?: string | null;
 };
 
+/* Identidade visual dos e-mails: vermelho escuro no cabeçalho, vermelho nos
+ * destaques e botões, fundo cinza claro e conteúdo em cartão branco. */
+const COR_CABECALHO = "#780000";
+const COR_DESTAQUE = "#C1121F";
+const COR_FUNDO = "#F5F5F5";
+const COR_TEXTO = "#1F2933";
+const COR_SUAVE = "#5B6773";
+const COR_LINHA = "#E5E5E5";
+
 function escapar(valor: string) {
   return valor
     .replace(/&/g, "&amp;")
@@ -47,199 +57,230 @@ function primeiroNome(nome: string) {
   return primeiro.charAt(0).toUpperCase() + primeiro.slice(1).toLowerCase();
 }
 
-function detalhesDoEvento(evento: EventoDoEmail) {
-  const modalidade =
-    ROTULOS_MODALIDADE[evento.modalidade as keyof typeof ROTULOS_MODALIDADE] ??
-    evento.modalidade;
-
-  const linhas: Array<[string, string]> = [
-    ["Evento", evento.titulo],
-    ["Tipo", rotuloTipo(evento.tipo)],
-    [
-      "Quando",
-      evento.inicio
-        ? formatarPeriodo(evento.inicio, evento.fim)
-        : "Consulte a organização",
-    ],
-    ["Modalidade", modalidade],
-  ];
-
-  if (evento.local?.trim()) {
-    linhas.push(["Local", evento.local.trim()]);
-  } else if (evento.modalidade === "online") {
-    linhas.push(["Local", "Online — o link de acesso fica na página do evento"]);
-  }
-
-  return linhas;
+function dataDoEvento(evento: EventoDoEmail) {
+  return evento.inicio ? formatarDataCurta(evento.inicio) : "A definir";
 }
 
-type TextosDoAviso = {
+function horarioDoEvento(evento: EventoDoEmail) {
+  if (!evento.inicio) return "A definir";
+  if (!evento.fim) return formatarHorario(evento.inicio);
+
+  return `${formatarHorario(evento.inicio)} às ${formatarHorario(evento.fim)}`;
+}
+
+function modalidadeDoEvento(evento: EventoDoEmail) {
+  return (
+    ROTULOS_MODALIDADE[evento.modalidade as keyof typeof ROTULOS_MODALIDADE] ??
+    evento.modalidade
+  );
+}
+
+function localDoEvento(evento: EventoDoEmail) {
+  if (evento.local?.trim()) return evento.local.trim();
+  if (evento.modalidade === "online") return "Online";
+  return "A definir";
+}
+
+type Aviso = {
   assunto: string;
   titulo: string;
-  faixa: string;
   abertura: (saudacao: string, evento: EventoDoEmail) => string;
-  chamada: string;
+  linhas: (dados: DadosAviso) => Array<[string, string]>;
+  paragrafos: string[];
   fechamento: string;
   botao: string;
-  destino: string;
+  url: string;
 };
 
-const TEXTOS: Record<AvisoTipo, TextosDoAviso> = {
-  inscrito: {
-    assunto: "Inscrição confirmada",
+const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
+  inscrito: (dados) => ({
+    assunto: `Inscrição confirmada em ${dados.evento.titulo}`,
     titulo: "Inscrição confirmada",
-    faixa: "#0f6b3f",
     abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Sua inscrição em "${evento.titulo}" está confirmada.`,
-    chamada: "Anote os detalhes e chegue com alguns minutos de antecedência.",
-    fechamento: "Nos vemos lá! Te espero no evento.",
-    botao: "Ver o evento",
-    destino: "evento",
-  },
-  cancelado: {
-    assunto: "Inscrição cancelada",
+      `Olá, ${saudacao}! Sua inscrição foi realizada com sucesso. Você está confirmado(a) no evento ${evento.titulo}.`,
+    linhas: (d) => [
+      ["Data", dataDoEvento(d.evento)],
+      ["Horário", horarioDoEvento(d.evento)],
+      ["Modalidade", modalidadeDoEvento(d.evento)],
+      ["Local", localDoEvento(d.evento)],
+    ],
+    paragrafos: [
+      "Guarde essas informações e fique atento(a) às próximas orientações.",
+      "Você pode acompanhar suas inscrições e consultar os detalhes do evento acessando o Partiu DPM.",
+    ],
+    fechamento: "Esperamos você!",
+    botao: "Acessar minhas inscrições",
+    url: `${siteUrl}/conta/inscricoes`,
+  }),
+  cancelado: (dados) => ({
+    assunto: `Cancelamento de inscrição – ${dados.evento.titulo}`,
     titulo: "Inscrição cancelada",
-    faixa: "#8a3b2e",
     abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}. Sua inscrição em "${evento.titulo}" foi cancelada.`,
-    chamada:
-      "Se mudar de ideia, você pode se inscrever de novo enquanto houver vagas.",
-    fechamento: "Que pena que você não vai desta vez. Te aguardamos no próximo evento!",
-    botao: "Ver outros eventos",
-    destino: "evento",
-  },
-  lista_espera: {
-    assunto: "Você está na lista de espera",
-    titulo: "Lista de espera",
-    faixa: "#8a5a1e",
+      `Olá, ${saudacao}! Informamos que sua inscrição no evento ${evento.titulo} foi cancelada.`,
+    linhas: (d) => [
+      ["Evento", d.evento.titulo],
+      ["Data", dataDoEvento(d.evento)],
+      ["Status", "Cancelada"],
+    ],
+    paragrafos: [
+      "Se o cancelamento foi solicitado por você, não é necessário realizar nenhuma outra ação.",
+      "Caso não reconheça essa alteração ou tenha dúvidas, entre em contato com a organização do evento.",
+      "Você pode consultar suas inscrições pelo portal Partiu DPM.",
+    ],
+    fechamento: "Esperamos você em um próximo evento!",
+    botao: "Acessar o Partiu DPM",
+    url: `${siteUrl}/conta/inscricoes`,
+  }),
+  lista_espera: (dados) => ({
+    assunto: `Você está na lista de espera – ${dados.evento.titulo}`,
+    titulo: "Você está na lista de espera",
     abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Você entrou na lista de espera de "${evento.titulo}".`,
-    chamada:
-      "Se uma vaga abrir, a organização confirma sua inscrição e avisa por aqui e por e-mail.",
-    fechamento: "Fique de olho no seu e-mail — pode dar certo!",
-    botao: "Acompanhar inscrições",
-    destino: "inscricoes",
-  },
-  presenca: {
-    assunto: "Presença confirmada",
+      `Olá, ${saudacao}! Recebemos sua inscrição para o evento ${evento.titulo}. No momento, todas as vagas disponíveis estão preenchidas, por isso sua inscrição foi registrada na lista de espera.`,
+    linhas: (d) => [
+      ["Evento", d.evento.titulo],
+      ["Data", dataDoEvento(d.evento)],
+      ["Horário", horarioDoEvento(d.evento)],
+      ["Status", "Lista de espera"],
+    ],
+    paragrafos: [
+      "Caso uma vaga seja disponibilizada, você poderá receber uma notificação sobre a possibilidade de confirmação da inscrição.",
+      "Fique atento(a) ao seu e-mail!",
+    ],
+    fechamento: "Obrigado pelo interesse!",
+    botao: "Acompanhar minha inscrição",
+    url: `${siteUrl}/conta/inscricoes`,
+  }),
+  presenca: (dados) => ({
+    assunto: `Presença confirmada – ${dados.evento.titulo}`,
     titulo: "Presença confirmada",
-    faixa: "#0f6b3f",
     abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Sua presença em "${evento.titulo}" foi registrada.`,
-    chamada:
+      `Olá, ${saudacao}! Sua presença no evento ${evento.titulo} foi registrada pela organização.`,
+    linhas: (d) => [
+      ["Evento", d.evento.titulo],
+      ["Data", dataDoEvento(d.evento)],
+      ["Horário", horarioDoEvento(d.evento)],
+      ["Status", "Presença registrada"],
+    ],
+    paragrafos: [
       "O certificado fica disponível na sua conta assim que a organização emitir.",
-    fechamento: "Obrigado por participar! Foi ótimo ter você no evento.",
-    botao: "Minha área",
-    destino: "conta",
-  },
-  certificado: {
-    assunto: "Seu certificado está disponível",
-    titulo: "Certificado disponível",
-    faixa: "#0f6b3f",
+    ],
+    fechamento: "Obrigado por participar!",
+    botao: "Acessar o Partiu DPM",
+    url: `${siteUrl}/conta`,
+  }),
+  certificado: (dados) => ({
+    assunto: `Seu certificado está disponível! – ${dados.evento.titulo}`,
+    titulo: "Seu certificado está disponível",
     abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Seu certificado de "${evento.titulo}" já pode ser baixado.`,
-    chamada:
-      "O arquivo fica na área do participante e traz um código de validação para conferir a autenticidade.",
-    fechamento: "Parabéns pela participação! Guarde seu certificado com carinho.",
-    botao: "Baixar certificado",
-    destino: "certificados",
-  },
+      `Olá, ${saudacao}! Temos uma novidade: seu certificado de participação no evento ${evento.titulo} já está disponível!`,
+    linhas: (d) => {
+      const carga = obterCargaHorariaEmHoras(d.evento.inicio, d.evento.fim);
+      const base: Array<[string, string]> = [
+        ["Evento", d.evento.titulo],
+        ["Participante", d.nome || "—"],
+        ["Carga horária", carga ? `${carga} horas` : "Conforme o evento"],
+        ["Data de realização", dataDoEvento(d.evento)],
+      ];
+
+      if (d.codigoValidacao) {
+        base.push(["Código de validação", d.codigoValidacao]);
+      }
+
+      return base;
+    },
+    paragrafos: [
+      "Você pode acessar, visualizar e baixar seu certificado diretamente pelo Partiu DPM.",
+    ],
+    fechamento: "Parabéns pela participação e por investir no seu aprendizado!",
+    botao: "Acessar meus certificados",
+    url: `${siteUrl}/conta/certificados`,
+  }),
 };
 
 /**
  * Aviso automático do sistema por e-mail.
  *
- * O tom muda conforme o tipo: boas-vindas na inscrição, mensagem gentil no
- * cancelamento, aviso de espera, confirmação de presença e certificado pronto.
+ * O texto segue os modelos definidos pela Etec DPM: saudação pelo primeiro
+ * nome, detalhes do evento em tabela, botão de ação e assinatura da equipe.
  */
 export async function enviarAvisoEvento(params: {
   tipo: AvisoTipo;
   dados: DadosAviso;
 }): Promise<ResultadoEnvio> {
   const { tipo, dados } = params;
-  const { evento } = dados;
-  const texto = TEXTOS[tipo];
+  const aviso = AVISOS[tipo](dados);
   const saudacao = primeiroNome(dados.nome) || "participante";
-  const assunto = `${texto.assunto}: ${evento.titulo}`;
+  const abertura = aviso.abertura(saudacao, dados.evento);
+  const linhas = aviso.linhas(dados);
 
-  const urlEvento = `${siteUrl}/eventos/${evento.id}`;
-  const urlConta = `${siteUrl}/conta/inscricoes`;
-  const urlCertificados = `${siteUrl}/conta/certificados`;
-
-  const destino =
-    texto.destino === "inscricoes"
-      ? urlConta
-      : texto.destino === "certificados"
-        ? urlCertificados
-        : texto.destino === "conta"
-          ? `${siteUrl}/conta`
-          : urlEvento;
-
-  const linhas = detalhesDoEvento(evento);
-
-  if (tipo === "certificado" && dados.codigoValidacao) {
-    linhas.push(["Código de validação", dados.codigoValidacao]);
-  }
-
-  const abertura = texto.abertura(saudacao, evento);
-
-  const corpo = [
+  const texto = [
     abertura,
     "",
     ...linhas.map(([rotulo, valor]) => `${rotulo}: ${valor}`),
     "",
-    texto.chamada,
-    texto.fechamento,
+    ...aviso.paragrafos,
     "",
-    `Detalhes: ${destino}`,
+    `${aviso.botao}: ${aviso.url}`,
     "",
-    "Partiu DPM",
+    aviso.fechamento,
+    "",
+    "Equipe Partiu DPM",
+    "Etec DPM",
   ].join("\n");
 
   const linhasHtml = linhas
     .map(
       ([rotulo, valor]) => `
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #e6e9ee;font-size:13px;color:#5b6b7c;width:130px;vertical-align:top;">${escapar(rotulo)}</td>
-          <td style="padding:10px 0;border-bottom:1px solid #e6e9ee;font-size:14px;color:#082237;font-weight:600;">${escapar(valor)}</td>
-        </tr>`,
+                <tr>
+                  <td style="padding:10px 0;border-bottom:1px solid ${COR_LINHA};font-size:13px;color:${COR_SUAVE};width:150px;vertical-align:top;">${escapar(rotulo)}</td>
+                  <td style="padding:10px 0;border-bottom:1px solid ${COR_LINHA};font-size:14px;color:${COR_TEXTO};font-weight:600;">${escapar(valor)}</td>
+                </tr>`,
+    )
+    .join("");
+
+  const paragrafosHtml = aviso.paragrafos
+    .map(
+      (paragrafo) =>
+        `<p style="margin:0 0 14px;font-size:14px;line-height:1.65;color:${COR_TEXTO};">${escapar(paragrafo)}</p>`,
     )
     .join("");
 
   const html = `<!doctype html>
 <html lang="pt-BR">
-  <body style="margin:0;padding:0;background:#f7f4ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f4ef;padding:24px 12px;">
+  <body style="margin:0;padding:0;background:${COR_FUNDO};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COR_FUNDO};padding:28px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e6e9ee;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;background:#FFFFFF;border-radius:12px;overflow:hidden;border:1px solid #E8E8E8;">
             <tr>
-              <td style="background:#082237;padding:22px 28px;color:#f7f4ef;">
-                <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#b9c7d4;">Partiu DPM</div>
-                <div style="font-size:20px;font-weight:700;margin-top:4px;">${escapar(texto.titulo)}</div>
+              <td style="background:${COR_CABECALHO};padding:26px 30px;">
+                <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#F3C6C6;">Partiu DPM</div>
+                <div style="font-size:21px;font-weight:700;margin-top:6px;color:#FFFFFF;">${escapar(aviso.titulo)}</div>
               </td>
             </tr>
             <tr>
-              <td style="padding:28px;">
-                <p style="margin:0 0 8px;font-size:16px;color:#082237;font-weight:600;">Olá, ${escapar(saudacao)}!</p>
-                <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#3d4d5c;">${escapar(abertura)}</p>
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+              <td style="height:4px;background:${COR_DESTAQUE};font-size:0;line-height:0;">&nbsp;</td>
+            </tr>
+            <tr>
+              <td style="padding:28px 30px 24px;">
+                <p style="margin:0 0 10px;font-size:16px;font-weight:700;color:${COR_CABECALHO};">Olá, ${escapar(saudacao)}!</p>
+                <p style="margin:0 0 18px;font-size:14px;line-height:1.65;color:${COR_TEXTO};">${escapar(abertura).replace(escapar(dados.evento.titulo), `<strong>${escapar(dados.evento.titulo)}</strong>`)}</p>
+                <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${COR_DESTAQUE};">Detalhes</p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;">
                   ${linhasHtml}
                 </table>
-                <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#3d4d5c;">${escapar(texto.chamada)}</p>
-                <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:${texto.faixa};font-weight:700;">${escapar(texto.fechamento)}</p>
+                ${paragrafosHtml}
+                <p style="margin:4px 0 22px;font-size:15px;line-height:1.6;color:${COR_DESTAQUE};font-weight:700;">${escapar(aviso.fechamento)}</p>
                 <p style="margin:0;">
-                  <a href="${destino}" style="display:inline-block;background:#082237;color:#f7f4ef;text-decoration:none;font-size:14px;font-weight:600;padding:12px 22px;border-radius:999px;">${escapar(texto.botao)}</a>
-                </p>
-                <p style="margin:18px 0 0;font-size:12px;line-height:1.6;color:#6b7c8c;">
-                  Você pode revisar suas inscrições em
-                  <a href="${urlConta}" style="color:#8a3b2e;">partiu-dpm</a>.
+                  <a href="${aviso.url}" style="display:inline-block;background:${COR_DESTAQUE};color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:700;padding:13px 26px;border-radius:8px;">${escapar(aviso.botao)}</a>
                 </p>
               </td>
             </tr>
             <tr>
-              <td style="padding:16px 28px;background:#f1efe9;font-size:11px;line-height:1.6;color:#6b7c8c;">
-                Você recebeu este e-mail porque usou o portal Partiu DPM.
+              <td style="padding:18px 30px;background:${COR_FUNDO};border-top:1px solid ${COR_LINHA};">
+                <p style="margin:0;font-size:13px;font-weight:700;color:${COR_CABECALHO};">Equipe Partiu DPM</p>
+                <p style="margin:4px 0 0;font-size:12px;color:${COR_SUAVE};">Etec DPM — Escola Técnica Estadual</p>
+                <p style="margin:10px 0 0;font-size:11px;line-height:1.5;color:${COR_SUAVE};">Você recebeu este e-mail porque usou o portal Partiu DPM.</p>
               </td>
             </tr>
           </table>
@@ -252,8 +293,8 @@ export async function enviarAvisoEvento(params: {
   return enviarEmail({
     para: dados.email,
     nome: dados.nome,
-    assunto,
-    texto: corpo,
+    assunto: aviso.assunto,
+    texto,
     html,
   });
 }

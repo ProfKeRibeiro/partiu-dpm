@@ -70,10 +70,22 @@ type ClienteSupabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 async function agendarAviso(
   supabase: ClienteSupabase,
   tipo: AvisoTipo,
+  inscricaoId: string | null,
   eventoId: string | null,
   usuario: { id: string; email?: string | null },
 ) {
-  if (!emailConfigurado() || !usuario.email || !eventoId) return;
+  if (!emailConfigurado() || !usuario.email || !eventoId || !inscricaoId) return;
+
+  /* Evita e-mail repetido quando a pessoa atualiza a página ou repete a
+   * operação: a RPC só registra o aviso se não houve outro igual nos últimos
+   * 5 minutos. */
+  const { data: podeEnviar } = await supabase.rpc("registrar_aviso_email", {
+    p_inscricao_id: inscricaoId,
+    p_tipo: tipo,
+    p_janela_segundos: 300,
+  });
+
+  if (podeEnviar !== true) return;
 
   const [{ data: evento }, { data: participante }] = await Promise.all([
     supabase
@@ -165,7 +177,23 @@ export async function inscreverEmEvento(
   const codigo = resultado.codigo ?? "erro";
 
   if (resultado.ok === true && codigo === "inscrito") {
-    await agendarAviso(supabase, "inscrito", eventoId, userData.user);
+    await agendarAviso(
+      supabase,
+      "inscrito",
+      resultado.inscricao_id ?? null,
+      eventoId,
+      userData.user,
+    );
+  }
+
+  if (resultado.ok === true && codigo === "lista_espera") {
+    await agendarAviso(
+      supabase,
+      "lista_espera",
+      resultado.inscricao_id ?? null,
+      eventoId,
+      userData.user,
+    );
   }
 
   revalidar(eventoId);
@@ -173,7 +201,10 @@ export async function inscreverEmEvento(
   return {
     ok: resultado.ok === true,
     codigo,
-    mensagem: mensagem(codigo),
+    mensagem:
+      resultado.ok === true && codigo === "lista_espera"
+        ? "Você entrou na lista de espera. Avisaremos se uma vaga for liberada."
+        : mensagem(codigo),
     inscricaoId: resultado.inscricao_id ?? null,
   };
 }
@@ -229,7 +260,13 @@ export async function cancelarInscricao(
       eventoDaInscricao = (inscricao?.evento_id as string | undefined) ?? null;
     }
 
-    await agendarAviso(supabase, "cancelado", eventoDaInscricao, userData.user);
+    await agendarAviso(
+      supabase,
+      "cancelado",
+      inscricaoId,
+      eventoDaInscricao,
+      userData.user,
+    );
   }
 
   revalidar(eventoId);

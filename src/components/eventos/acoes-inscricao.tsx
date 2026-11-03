@@ -39,9 +39,10 @@ export function AcoesInscricao({
 
   const confirmada = inscricao?.status === "confirmada";
   const mensagem = estadoInscricao ?? estadoCancelamento;
+  const podeListaEspera = situacao === "lotado";
 
   if (!autenticado) {
-    if (situacao !== "aberta") return null;
+    if (situacao !== "aberta" && !podeListaEspera) return null;
 
     return (
       <div>
@@ -49,11 +50,13 @@ export function AcoesInscricao({
           href={`/entrar?next=${encodeURIComponent(destinoLogin)}`}
           className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-deep px-5 text-sm font-semibold text-papaya transition-colors hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
         >
-          Entrar para se inscrever
+          {podeListaEspera ? "Entrar para a lista de espera" : "Entrar para se inscrever"}
           <IconeSetaDiagonal className="h-4 w-4" />
         </Link>
         <p className="mt-3 text-center text-xs leading-relaxed text-muted">
-          A inscrição exige uma conta no Partiu DPM.
+          {podeListaEspera
+            ? "As vagas estão preenchidas. Entre para entrar na lista de espera e ser avisado se uma vaga abrir."
+            : "A inscrição exige uma conta no Partiu DPM."}
         </p>
       </div>
     );
@@ -126,7 +129,7 @@ export function AcoesInscricao({
     );
   }
 
-  if (situacao !== "aberta") return null;
+  if (situacao !== "aberta" && !podeListaEspera) return null;
 
   return (
     <div>
@@ -137,10 +140,21 @@ export function AcoesInscricao({
           disabled={inscrevendo}
           className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-deep px-5 text-sm font-semibold text-papaya transition-colors hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {inscrevendo ? "Confirmando..." : "Confirmar inscrição"}
+          {inscrevendo
+            ? "Registrando..."
+            : podeListaEspera
+              ? "Entrar na lista de espera"
+              : "Confirmar inscrição"}
           <IconeCheck className="h-4 w-4" />
         </button>
       </form>
+
+      {podeListaEspera ? (
+        <p className="mt-2 text-center text-xs leading-relaxed text-muted">
+          As vagas estão preenchidas. Na lista de espera, você é avisado por
+          e-mail se uma vaga for liberada.
+        </p>
+      ) : null}
 
       {inscricao?.status === "cancelada" ? (
         <p className="mt-2 text-center text-xs text-muted">

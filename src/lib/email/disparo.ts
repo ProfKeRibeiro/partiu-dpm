@@ -33,8 +33,19 @@ export async function agendarAvisoInscricao(
   supabase: ClienteSupabase,
   inscricaoId: string,
   tipo: AvisoTipo,
+  janelaSegundos = 300,
 ) {
   if (!emailConfigurado()) return;
+
+  /* Deduplica: evita segundo e-mail por duplo clique, atualização da página ou
+   * repetição de uma operação já concluída. O reenvio manual usa janela 0. */
+  const { data: podeEnviar } = await supabase.rpc("registrar_aviso_email", {
+    p_inscricao_id: inscricaoId,
+    p_tipo: tipo,
+    p_janela_segundos: janelaSegundos,
+  });
+
+  if (podeEnviar !== true) return;
 
   const { data, error } = await supabase.rpc("dados_aviso_inscricao", {
     p_inscricao_id: inscricaoId,

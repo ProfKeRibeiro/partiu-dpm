@@ -117,7 +117,7 @@ export async function reenviarAvisoCertificado(formData: FormData) {
 
   const supabase = await createSupabaseServerClient();
 
-  await agendarAvisoInscricao(supabase, inscricaoId, "certificado");
+  await agendarAvisoInscricao(supabase, inscricaoId, "certificado", 0);
 
   revalidar(eventoId);
 }
