@@ -305,6 +305,9 @@ docs/
   São Paulo, em `vercel.json`) expira convites vencidos e convoca a próxima
   pessoa mesmo sem ninguém acessar o portal. O endpoint exige
   `Authorization: Bearer $CRON_SECRET`.
+- Além disso, abrir a página de um evento ou qualquer página da área do
+  participante roda a mesma expiração (`expirarConvitesNaVisita`), então a vaga
+  costuma ser liberada em minutos, não em horas.
 - **O remetente precisa estar verificado no Brevo** (Senders & Domains →
   Senders). Se o Brevo recusar por “sender not valid”, a mensagem aparece em
   Brevo → Transactional → Logs e nada chega ao participante. Certificado já
