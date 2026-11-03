@@ -15,12 +15,13 @@
 
 ```text
 default-src 'self';
-script-src 'self' 'unsafe-inline';
-style-src 'self' 'unsafe-inline';
-img-src 'self' data: blob: https://*.supabase.co;
-font-src 'self' data:;
-connect-src 'self' https://*.supabase.co;
-media-src 'self' blob:;
+script-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://cdn.userway.org https://*.userway.org;
+style-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://cdn.userway.org https://*.userway.org;
+img-src 'self' data: blob: https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://cdn.userway.org https://*.userway.org https://api.userway.org;
+font-src 'self' data: https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://cdn.userway.org https://*.userway.org;
+connect-src 'self' https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net https://api.userway.org https://*.userway.org;
+media-src 'self' blob: https://vlibras.gov.br https://*.vlibras.gov.br;
+frame-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br https://*.userway.org;
 worker-src 'self' blob:;
 frame-ancestors 'self';
 object-src 'none';
@@ -38,6 +39,9 @@ form-action 'self'
 | `img-src https://*.supabase.co` | Avatares e capas de evento enviados pelo portal, servidos pelo Storage. |
 | `connect-src https://*.supabase.co` | Chamadas do navegador ao Supabase (login, upload de avatar, leitura pública). |
 | `media-src blob:` / `worker-src blob:` | Leitor de QR (`getUserMedia` + canvas/jsQR). |
+| `vlibras.gov.br` e `*.vlibras.gov.br` | Widget oficial de Libras (script, estilos, mídia e iframe). |
+| `cdn.jsdelivr.net` | O `vlibras.gov.br/app/vlibras-plugin.js` responde 302 para o espelho na jsDelivr; sem esse domínio o plugin não carrega. |
+| `cdn.userway.org`, `*.userway.org` e `api.userway.org` | Menu de acessibilidade do UserWay (script, estilos, API de configuração e iframe). |
 | `object-src 'none'`, `base-uri 'self'` | Bloqueia plugins e sequestro de URLs relativas. |
 | `frame-ancestors 'self'` | Equivale ao `X-Frame-Options: SAMEORIGIN` já enviado. |
 
