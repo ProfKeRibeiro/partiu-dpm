@@ -6,10 +6,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
  * Recebe os links enviados pelo Supabase Auth (confirmação de cadastro e
- * recuperação de senha) e troca o `code` por uma sessão antes de seguir.
+ * recuperação de senha).
  *
- * Sem essa troca o usuário cairia em `/entrar` sem sessão e com um `?code=`
- * inútil na URL. O destino final vem em `next` e só aceita caminhos internos.
+ * O GET nunca consome o `token_hash`: scanners do provedor de e-mail abrem o
+ * link antes da pessoa e queimariam o token. Nesse caso o pedido só redireciona
+ * para `/confirmar-acesso`, que mostra um botão; a verificação acontece no POST
+ * da Server Action. O fluxo antigo por `code` (PKCE) continua igual.
+ *
+ * O destino final vem em `next` e só aceita caminhos internos.
  */
 function falha(request: NextRequest, motivo: string) {
   const url = new URL("/entrar", request.nextUrl.origin);
@@ -36,21 +40,27 @@ export async function GET(request: NextRequest) {
   const tipo = params.get("type") as EmailOtpType | null;
   const destino = destinoSeguroInterno(params.get("next"));
 
-  const supabase = await createSupabaseServerClient();
-
   if (code) {
+    const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
+
     if (!error) {
       return NextResponse.redirect(new URL(destino, request.nextUrl.origin));
     }
-  } else if (tokenHash && tipo) {
-    const { error } = await supabase.auth.verifyOtp({
-      type: tipo,
-      token_hash: tokenHash,
-    });
-    if (!error) {
-      return NextResponse.redirect(new URL(destino, request.nextUrl.origin));
+
+    return falha(request, "link");
+  }
+
+  if (tokenHash && tipo) {
+    const url = new URL("/confirmar-acesso", request.nextUrl.origin);
+    url.searchParams.set("token_hash", tokenHash);
+    url.searchParams.set("type", tipo);
+
+    if (params.get("next")) {
+      url.searchParams.set("next", destino);
     }
+
+    return NextResponse.redirect(url);
   }
 
   return falha(request, "link");
