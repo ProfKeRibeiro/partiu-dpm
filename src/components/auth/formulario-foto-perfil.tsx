@@ -84,7 +84,7 @@ export function FormularioFotoPerfil({
       const caminho = `${usuarioId}/${crypto.randomUUID()}.${extensao}`;
       const bucket = supabase.storage.from("avatars");
       const { error: erroUpload } = await bucket.upload(caminho, arquivo, {
-        cacheControl: "3600",
+        cacheControl: "60",
         contentType: arquivo.type,
         upsert: false,
       });
