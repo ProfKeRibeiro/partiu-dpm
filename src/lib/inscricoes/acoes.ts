@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { emailConfigurado } from "@/lib/email/enviar";
-import { enviarEmailInscricao, type AvisoInscricao } from "@/lib/email/inscricao";
+import { enviarAvisoEvento, type AvisoTipo } from "@/lib/email/avisos";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const REGEX_UUID =
@@ -69,7 +69,7 @@ type ClienteSupabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
  */
 async function agendarAviso(
   supabase: ClienteSupabase,
-  tipo: AvisoInscricao,
+  tipo: AvisoTipo,
   eventoId: string | null,
   usuario: { id: string; email?: string | null },
 ) {
@@ -97,18 +97,20 @@ async function agendarAviso(
   const nome = participante?.nome_completo?.trim() || "";
 
   after(async () => {
-    await enviarEmailInscricao({
+    await enviarAvisoEvento({
       tipo,
-      para,
-      nome,
-      evento: {
-        id: evento.id as string,
-        titulo: evento.titulo as string,
-        tipo: evento.tipo as string,
-        modalidade: evento.modalidade as string,
-        local: (evento.local_evento as string | null) ?? null,
-        inicio: (evento.data_inicio as string | null) ?? null,
-        fim: (evento.data_fim as string | null) ?? null,
+      dados: {
+        nome,
+        email: para,
+        evento: {
+          id: evento.id as string,
+          titulo: evento.titulo as string,
+          tipo: evento.tipo as string,
+          modalidade: evento.modalidade as string,
+          local: (evento.local_evento as string | null) ?? null,
+          inicio: (evento.data_inicio as string | null) ?? null,
+          fim: (evento.data_fim as string | null) ?? null,
+        },
       },
     });
   });
