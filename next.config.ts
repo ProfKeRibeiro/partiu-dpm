@@ -44,13 +44,14 @@ if (supabaseUrl) {
 const contentSecurityPolicy = [
   "default-src 'self'",
   process.env.NODE_ENV === "production"
-    ? "script-src 'self' 'unsafe-inline'"
-    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co",
-  "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co",
-  "media-src 'self' blob:",
+    ? "script-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
+  "style-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
+  "img-src 'self' data: blob: https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
+  "font-src 'self' data: https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
+  "connect-src 'self' https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.userway.org",
+  "media-src 'self' blob: https://vlibras.gov.br https://*.vlibras.gov.br",
+  "frame-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br",
   "worker-src 'self' blob:",
   "frame-ancestors 'self'",
   "object-src 'none'",

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Poppins } from "next/font/google";
 import { siteUrl } from "@/lib/env";
+import { Vlibras } from "@/components/site/vlibras";
+import { AcessibilidadeUserWay } from "@/components/site/userway";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -76,6 +78,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Ir para o conteúdo
         </a>
         {children}
+        <Vlibras />
+        <AcessibilidadeUserWay />
       </body>
     </html>
   );
