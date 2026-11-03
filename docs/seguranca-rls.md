@@ -1,14 +1,21 @@
 # Segurança e RLS
 
-> **Status: endurecido em 27/10/2026.**
+> **Status: endurecido em 27/10/2026 e revisado em 03/11/2026.**
 >
-> Cinco migrações foram aplicadas via MCP do Supabase:
+> Migrações de 27/10/2026:
 >
 > 1. `endurecer_seguranca_e_inscricoes`
 > 2. `manter_updated_at`
 > 3. `admin_presencas_certificados_e_link`
 > 4. `atualizar_perfil_participante_rpc`
 > 5. `indices_chaves_estrangeiras`
+>
+> Migrações de 03/11/2026 (revisão de segurança):
+>
+> 6. `endurecer_rpcs_convite_posicao_publicacao`
+> 7. `registrar_aviso_email_exige_dono`
+> 8. `avatars_privado_com_leitura_do_dono`
+> 9. `participantes_sem_update_direto`
 >
 > Elas resolveram a exposição de `link_evento`, a escrita direta em
 > `inscricoes`, os grants amplos, a ausência de trigger de `updated_at` e a
@@ -17,6 +24,51 @@
 
 O schema detalhado está em [`banco-de-dados.md`](banco-de-dados.md).
 
+> As seções seguintes registram o estado de 27/10/2026. Onde houver
+> divergência com a atualização de 03/11/2026, vale a atualização.
+
+## Atualização 03/11/2026
+
+Revisão de segurança com testes negativos via API pública e correções aplicadas.
+
+### Mudanças no banco
+
+| Item | Estado |
+| --- | --- |
+| `registrar_aviso_email` | Exige dono da inscrição, `eh_admin()` ou `auth.role() = 'service_role'`. `EXECUTE` revogado de `PUBLIC`/`anon`. |
+| `posicao_lista_espera` | Exige dono ou admin; `EXECUTE` revogado de `PUBLIC`/`anon`. |
+| `responder_convite` | `EXECUTE` revogado de `PUBLIC`/`anon` (já validava `auth.uid()`). |
+| `admin_publicar_evento` | `EXECUTE` revogado de `PUBLIC`/`anon` (já validava `eh_admin()`). |
+| `participantes` | `UPDATE` direto revogado de `authenticated`; edição só pela RPC `atualizar_perfil_participante`. |
+| Bucket `avatars` | Privado; leitura por `SELECT` apenas para o dono ou admin. O app usa URL assinada de 2 h. |
+
+### Mudanças no app e na infraestrutura
+
+- `src/lib/rota-segura.ts`: allowlist de destinos internos e rejeição de `\`/`%5c`, usada no login, na ação de login e em `/auth/confirm`. Corrige open redirect.
+- `next.config.ts`: `Content-Security-Policy-Report-Only` (modo observação, sem bloqueio).
+- Vercel WAF: regra `Rate limit certificados` — `/api/certificados` limitado a 60 req/60 s por IP, excedeu → `deny`.
+- `src/lib/auth/sessao.ts` e `formulario-foto-perfil.tsx`: avatar passou a ser gravado como `avatar_path` e exibido por URL assinada.
+- `src/lib/auth/senha-vazada.ts`: checagem de senha vazada no cadastro e na troca de senha via HIBP (k-anonymity; envia só 5 caracteres do SHA-1). Em indisponibilidade do serviço, o cadastro continua e a falha vai para o log.
+- `.env.example`: inclui `SUPABASE_SERVICE_ROLE_KEY` e `CRON_SECRET`.
+
+### Riscos aceitos (decisão do responsável)
+
+| Risco | Motivo |
+| --- | --- |
+| Cadastro não confirma vínculo com a escola; qualquer pessoa pode se declarar `aluno`/`servidor`. | Confirmar exigiria lista oficial ou e-mail institucional; custo alto no momento. Reavaliar se eventos restritos passarem a expor conteúdo sensível. |
+| `expirar_convites` continua executável por `authenticated`. | Só age em convites já vencidos; impacto limitado. |
+| Cadastro informa “este e-mail já tem conta”. | Decisão de produto: ajuda a pessoa a lembrar que já se registrou. Risco de enumeração de contas aceito; a recuperação de senha continua neutra. |
+
+### Pendências
+
+- Ativar leaked password protection nativo no Supabase Auth. O recurso (HIBP)
+  exige **plano Pro**: a Management API responde `402 — available on Pro Plans
+  and up`. Mitigações já aplicadas no plano atual: mínimo de senha ajustado de
+  6 para **8** e checagem HIBP no app (`src/lib/auth/senha-vazada.ts`) no
+  cadastro e na troca de senha.
+- Promover a CSP de `Report-Only` para bloqueante após revisar os avisos.
+- Colocar o novo código em produção (open redirect, CSP e avatar assinado).
+
 ## Princípios
 
 1. **A RLS é a autoridade.** Esconder um botão ou filtrar no cliente não é
@@ -24,9 +76,11 @@ O schema detalhado está em [`banco-de-dados.md`](banco-de-dados.md).
    banco.
 2. **A chave pública é pública.** Qualquer pessoa pode extraí-la do bundle. A
    proteção vem das políticas e dos grants, não do segredo da chave.
-3. **`service_role` nunca vai para o frontend.** Ela ignora a RLS. Se um dia for
-   necessária no servidor, deve ficar em variável sem `NEXT_PUBLIC_` e ser usada
-   apenas em rotinas administrativas explícitas.
+3. **`service_role` nunca vai para o frontend.** Ela ignora a RLS e é usada
+   apenas no servidor (`src/lib/supabase/admin.ts`, com `import "server-only"`)
+   para o cron de convites e para ler o e-mail de quem foi promovido da lista
+   de espera. A variável é `SUPABASE_SERVICE_ROLE_KEY`, sem prefixo
+   `NEXT_PUBLIC_`.
 4. **Autorização administrativa usa `public.eh_admin()`**, que consulta
    `public.administradores`. Não confie em `user_metadata` (editável pelo
    usuário) para decidir quem é admin.
@@ -55,23 +109,27 @@ O schema detalhado está em [`banco-de-dados.md`](banco-de-dados.md).
   a resposta por um shell de erro).
 - Server Actions validam sessão e admin no servidor antes de chamar as RPCs;
   `redirect()` é usado apenas dentro de actions.
-- `.env.local` ignorado pelo Git; `service_role` não é usada.
+- `.env.local` ignorado pelo Git. `service_role` é usada apenas no servidor
+  (`admin.ts` + `promocao.ts`/`expiracao.ts`), nunca em componente cliente.
 - Cabeçalhos de segurança básicos em `next.config.ts`.
 
 ## Estado real após as migrações
 
 ### RLS e políticas
 
-RLS ativa nas seis tabelas. Nenhuma tabela está com `FORCE ROW LEVEL SECURITY`;
+RLS ativa nas nove tabelas. Nenhuma tabela está com `FORCE ROW LEVEL SECURITY`;
 o dono e `service_role` ignoram as políticas, como é padrão no Supabase.
 
 | Tabela | Políticas após as migrações |
 | --- | --- |
 | `eventos` | `SELECT` para `anon` (`status = 'publicado'`) e `SELECT` para `authenticated` (`status = 'publicado' OR eh_admin()`); `ALL` para admin (`authenticated`). |
-| `participantes` | `SELECT` e `UPDATE` do próprio perfil ou admin; `INSERT` do próprio perfil (sem grant direto; o trigger é o caminho). |
+| `participantes` | `SELECT` do próprio perfil ou admin; `INSERT` do próprio perfil (sem grant direto; o trigger é o caminho). A policy de `UPDATE` existe, mas o grant foi revogado: edição só pela RPC. |
 | `inscricoes` | Apenas `SELECT` das próprias ou admin. `INSERT`/`UPDATE` de usuário comum foram removidos. |
 | `presencas` | `SELECT` da própria ou admin; `ALL` para admin. |
 | `certificados` | `SELECT` do próprio ou admin; `ALL` para admin. |
+| `convocacoes` | `SELECT` da própria ou admin; escrita só pelas RPCs de lista de espera. |
+| `notificacoes` | `SELECT` e `UPDATE` (só `lida_em`) da própria; `INSERT` só por trigger. |
+| `avisos_email` | RLS ativa sem policy: negação total para `anon`/`authenticated`; escrita só pela RPC `SECURITY DEFINER`. |
 | `administradores` | `SELECT` da própria linha ou admin. Sem política de escrita. |
 
 As regras completas, com `using` e `with_check`, estão no documento de schema.
@@ -94,6 +152,12 @@ As regras completas, com `using` e `with_check`, estão no documento de schema.
 | `admin_cancelar_certificado(uuid)` | RPC admin | Não executa | Executa (exige `eh_admin()`) |
 | `admin_definir_status_inscricao(uuid, text)` | RPC admin | Não executa | Executa (exige `eh_admin()`) |
 | `validar_certificado(uuid)` | RPC pública de leitura | Executa | Executa |
+| `contar_lista_espera(uuid)` | Leitura pública de contagem | Executa | Executa |
+| `posicao_lista_espera(uuid)` | RPC de leitura restrita | Não executa | Executa (dono/admin) |
+| `responder_convite(uuid, boolean)` | RPC transacional | Não executa | Executa (dono) |
+| `registrar_aviso_email(uuid, text, int)` | RPC de deduplicação | Não executa | Executa (dono/admin/`service_role`) |
+| `expirar_convites()` | Manutenção | Não executa | Executa (risco aceito) |
+| `admin_publicar_evento(uuid)` | RPC admin | Não executa | Executa (exige `eh_admin()`) |
 
 Triggers ativos:
 
@@ -108,10 +172,13 @@ Triggers ativos:
 | Tabela | `anon` | `authenticated` |
 | --- | --- | --- |
 | `eventos` | `SELECT` em colunas públicas | `SELECT` por coluna (sem `link_evento`) + `INSERT`, `UPDATE`, `DELETE` (protegidos por RLS/admin) |
-| `participantes` | Nenhum | `SELECT` apenas (edição via RPC) |
+| `participantes` | Nenhum | `SELECT` apenas (edição via RPC; `UPDATE` de coluna revogado em 03/11/2026) |
 | `inscricoes` | Nenhum | `SELECT` apenas |
 | `presencas` | Nenhum | `SELECT`, `INSERT`, `UPDATE`, `DELETE` (admin via RLS) |
 | `certificados` | Nenhum | `SELECT`, `INSERT`, `UPDATE`, `DELETE` (admin via RLS) |
+| `convocacoes` | Nenhum | `SELECT` apenas |
+| `notificacoes` | Nenhum | `SELECT` + `UPDATE` de `lida_em` |
+| `avisos_email` | Nenhum | Nenhum |
 | `administradores` | Nenhum | `SELECT` |
 
 Colunas de `eventos` legíveis por `anon`:
@@ -223,7 +290,7 @@ leitura pública.
 
 ### 5. Grants amplos em tabelas sensíveis — resolvido
 
-`anon` perdeu todo o acesso de tabela nas seis tabelas; mantém apenas o `SELECT`
+`anon` perdeu todo o acesso de tabela nas nove tabelas; mantém apenas o `SELECT`
 por coluna em `eventos`. `authenticated` perdeu escrita direta em `inscricoes`,
 escrita direta em `participantes` e a leitura de `link_evento`.
 
@@ -278,7 +345,7 @@ Consulta após as migrações, em 27/10/2026:
 | --- | --- | --- |
 | WARN | `anon` executa 1 função `SECURITY DEFINER` | `validar_certificado(uuid)`, intencional: leitura pública e sem escrita. |
 | WARN | `authenticated` executa 11 funções `SECURITY DEFINER` | **Intencional.** Funções de negócio; fixam `search_path` e validam o chamador/`eh_admin()`. |
-| WARN | Proteção de senha vazada desativada | **Pendente:** ativar em Auth → Password Security. |
+| WARN | Proteção de senha vazada desativada | **Bloqueado pelo plano:** HIBP nativo exige Pro (`402`). Mitigação: `password_min_length = 8` + checagem HIBP no app. |
 | WARN | Políticas permissivas múltiplas em `eventos`, `certificados` e `presencas` | Apenas performance; as policies `ALL` de admin coexistem com as de leitura. |
 | INFO | FKs sem índice | **Resolvido** pelos três índices criados. |
 | INFO | Índices não usados em `inscricoes` e `certificados` | Esperado: tabelas vazias. Reavaliar com dados. |
@@ -452,7 +519,7 @@ original.
 
 Já confirmado:
 
-- [x] RLS habilitada nas seis tabelas.
+- [x] RLS habilitada nas nove tabelas.
 - [x] Políticas e grants documentados após as migrações.
 - [x] `eh_admin()` e as funções de trigger revisadas e com `EXECUTE` mínimo.
 - [x] `anon` lê apenas eventos publicados, e só colunas públicas.
@@ -470,7 +537,7 @@ Já confirmado:
 
 Pendente:
 
-- [ ] Ativar proteção de senha vazada no Supabase Auth.
+- [x] Checagem de senha vazada no app (HIBP/k-anonymity) + mínimo de senha 8. O recurso nativo do Supabase segue pendente por exigir plano Pro.
 - [ ] Cadastro/edição de eventos pelo painel (hoje via SQL/dashboard).
 - [ ] Publicar o repositório e configurar a Vercel.
 - [ ] Revisar Storage, caso os certificados passem a ser PDFs.

@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { isSupabaseConfigured, siteUrl } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CURSOS_DISPONIVEIS } from "@/lib/cursos";
+import { destinoSeguroInterno } from "@/lib/rota-segura";
+import { senhaVazada } from "@/lib/auth/senha-vazada";
 
 export type EstadoAuth = { erro?: string; mensagem?: string } | null;
 
@@ -13,18 +15,6 @@ const CATEGORIAS_CADASTRO = ["aluno", "servidor", "externo"] as const;
 function texto(formData: FormData, campo: string) {
   const valor = formData.get(campo);
   return typeof valor === "string" ? valor.trim() : "";
-}
-
-/**
- * Só aceita caminhos internos. Evita open redirect via `?next=`.
- */
-function destinoSeguro(valor: FormDataEntryValue | null) {
-  const texto = typeof valor === "string" ? valor.trim() : "";
-
-  if (!texto.startsWith("/") || texto.startsWith("//")) return "/conta";
-  if (texto.startsWith("/entrar")) return "/conta";
-
-  return texto;
 }
 
 function traduzirErroAuth(mensagem: string) {
@@ -81,7 +71,7 @@ export async function entrar(
 
   const email = texto(formData, "email").toLowerCase();
   const senha = texto(formData, "senha");
-  const destino = destinoSeguro(formData.get("next"));
+  const destino = destinoSeguroInterno(formData.get("next"));
 
   if (!email || !senha) {
     return { erro: "Informe e-mail e senha." };
@@ -116,7 +106,7 @@ export async function criarConta(
   const senha = texto(formData, "senha");
   const categoria = texto(formData, "categoria");
   const curso = texto(formData, "curso");
-  const destino = destinoSeguro(formData.get("next"));
+  const destino = destinoSeguroInterno(formData.get("next"));
 
   if (nome.length < 3) {
     return { erro: "Informe seu nome completo (mínimo 3 caracteres)." };
@@ -127,6 +117,13 @@ export async function criarConta(
   if (senha.length < 8) {
     return { erro: "A senha precisa ter pelo menos 8 caracteres." };
   }
+
+  if ((await senhaVazada(senha)) === true) {
+    return {
+      erro: "Essa senha apareceu em vazamentos conhecidos de dados. Escolha outra, mais difícil de adivinhar.",
+    };
+  }
+
   if (
     !CATEGORIAS_CADASTRO.includes(
       categoria as (typeof CATEGORIAS_CADASTRO)[number],
@@ -245,6 +242,12 @@ export async function redefinirSenha(
 
   if (senha !== confirmacao) {
     return { erro: "As senhas informadas não são iguais." };
+  }
+
+  if ((await senhaVazada(senha)) === true) {
+    return {
+      erro: "Essa senha apareceu em vazamentos conhecidos de dados. Escolha outra, mais difícil de adivinhar.",
+    };
   }
 
   const { error } = await supabase.auth.updateUser({ password: senha });
@@ -419,6 +422,12 @@ export async function alterarSenha(
 
   if (senha !== confirmacao) {
     return { erro: "As senhas informadas não são iguais." };
+  }
+
+  if ((await senhaVazada(senha)) === true) {
+    return {
+      erro: "Essa senha apareceu em vazamentos conhecidos de dados. Escolha outra, mais difícil de adivinhar.",
+    };
   }
 
   const { error } = await supabase.auth.updateUser({ password: senha });

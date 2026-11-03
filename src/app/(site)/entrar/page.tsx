@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/icons";
 import { obterUsuario } from "@/lib/auth/sessao";
 import { isSupabaseConfigured } from "@/lib/env";
+import { destinoSeguroInterno } from "@/lib/rota-segura";
 
 export const metadata: Metadata = {
   title: "Área do participante",
@@ -37,14 +38,6 @@ const recursos = [
   },
 ] as const;
 
-function destinoSeguro(valor: string | undefined) {
-  if (!valor || !valor.startsWith("/") || valor.startsWith("//")) {
-    return "/conta";
-  }
-
-  return valor.startsWith("/entrar") ? "/conta" : valor;
-}
-
 export default async function EntrarPage({
   searchParams,
 }: {
@@ -60,7 +53,7 @@ export default async function EntrarPage({
   }
 
   const modo = params.modo === "criar" ? "criar" : "entrar";
-  const next = destinoSeguro(params.next);
+  const next = destinoSeguroInterno(params.next);
   const aviso =
     params.erro === "link" || params.erro === "expirado"
       ? "O link que você abriu expirou ou já foi usado. Entre com sua senha ou peça um novo link de recuperação — o link precisa ser aberto no mesmo navegador em que foi pedido."

@@ -31,6 +31,29 @@ if (supabaseUrl) {
   }
 }
 
+/**
+ * CSP em modo observação: registra no console o que seria bloqueado, sem
+ * impedir o carregamento. Depois de revisar os avisos, trocar a chave para
+ * `Content-Security-Policy` para bloquear de fato.
+ *
+ * `'unsafe-inline'` é necessário para os scripts de bootstrap do Next e para
+ * os estilos do Tailwind; a evolução é usar nonce e remover essa exceção.
+ */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://*.supabase.co",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co",
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "frame-ancestors 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
@@ -59,6 +82,10 @@ const nextConfig: NextConfig = {
             // camera=(self): o leitor de QR code do certificado usa a câmera
             // do próprio dispositivo na página de validação.
             value: "camera=(self), microphone=(), geolocation=()",
+          },
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: contentSecurityPolicy,
           },
         ],
       },

@@ -1,6 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import { destinoSeguroInterno } from "@/lib/rota-segura";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -10,14 +11,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * Sem essa troca o usuário cairia em `/entrar` sem sessão e com um `?code=`
  * inútil na URL. O destino final vem em `next` e só aceita caminhos internos.
  */
-function destinoSeguro(valor: string | null) {
-  if (!valor || !valor.startsWith("/") || valor.startsWith("//")) {
-    return "/conta";
-  }
-
-  return valor.startsWith("/auth/") ? "/conta" : valor;
-}
-
 function falha(request: NextRequest, motivo: string) {
   const url = new URL("/entrar", request.nextUrl.origin);
   url.searchParams.set("erro", motivo);
@@ -41,7 +34,7 @@ export async function GET(request: NextRequest) {
   const code = params.get("code");
   const tokenHash = params.get("token_hash");
   const tipo = params.get("type") as EmailOtpType | null;
-  const destino = destinoSeguro(params.get("next"));
+  const destino = destinoSeguroInterno(params.get("next"));
 
   const supabase = await createSupabaseServerClient();
 

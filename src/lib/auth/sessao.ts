@@ -8,7 +8,35 @@ export type Usuario = {
   email: string | null;
   nome: string | null;
   avatarUrl: string | null;
+  avatarPath: string | null;
 };
+
+const MARCADOR_AVATAR_PUBLICO = "/storage/v1/object/public/avatars/";
+const VALIDADE_AVATAR_SEGUNDOS = 60 * 60 * 2;
+
+/**
+ * O avatar novo é gravado como caminho (`avatar_path`). Contas antigas ainda
+ * têm a URL pública em `avatar_url`; nesse caso o caminho é extraído dela.
+ */
+function caminhoDoAvatar(metadata: Record<string, unknown>): string | null {
+  const caminho = metadata.avatar_path;
+
+  if (typeof caminho === "string" && caminho.trim()) return caminho.trim();
+
+  const url = metadata.avatar_url;
+
+  if (typeof url !== "string") return null;
+
+  const indice = url.indexOf(MARCADOR_AVATAR_PUBLICO);
+
+  if (indice < 0) return null;
+
+  const bruto = decodeURIComponent(
+    url.slice(indice + MARCADOR_AVATAR_PUBLICO.length).split("?")[0],
+  );
+
+  return bruto || null;
+}
 
 export type Perfil = {
   id: string;
@@ -26,6 +54,20 @@ export const obterUsuario = cache(async (): Promise<Usuario | null> => {
 
   if (error || !data.user) return null;
 
+  const avatarPath = caminhoDoAvatar(
+    data.user.user_metadata as Record<string, unknown>,
+  );
+
+  let avatarUrl: string | null = null;
+
+  if (avatarPath) {
+    const { data: assinada } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(avatarPath, VALIDADE_AVATAR_SEGUNDOS);
+
+    avatarUrl = assinada?.signedUrl ?? null;
+  }
+
   return {
     id: data.user.id,
     email: data.user.email ?? null,
@@ -34,10 +76,8 @@ export const obterUsuario = cache(async (): Promise<Usuario | null> => {
       data.user.user_metadata.nome_completo.trim()
         ? data.user.user_metadata.nome_completo.trim()
         : null,
-    avatarUrl:
-      typeof data.user.user_metadata.avatar_url === "string"
-        ? data.user.user_metadata.avatar_url
-        : null,
+    avatarUrl,
+    avatarPath,
   };
 });
 

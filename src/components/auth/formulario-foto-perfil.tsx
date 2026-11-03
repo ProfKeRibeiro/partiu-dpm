@@ -29,9 +29,11 @@ function caminhoAvatar(url: string | null, usuarioId: string) {
 export function FormularioFotoPerfil({
   nome,
   avatarUrl,
+  avatarPath,
 }: {
   nome: string;
   avatarUrl: string | null;
+  avatarPath: string | null;
 }) {
   const router = useRouter();
   const [fotoAtual, setFotoAtual] = useState(avatarUrl);
@@ -93,9 +95,11 @@ export function FormularioFotoPerfil({
         return;
       }
 
-      const url = bucket.getPublicUrl(caminho).data.publicUrl;
+      const { data: assinada } = await bucket.createSignedUrl(caminho, 7200);
+      const url = assinada?.signedUrl ?? null;
+
       const { error: erroAtualizacao } = await supabase.auth.updateUser({
-        data: { avatar_url: url },
+        data: { avatar_path: caminho, avatar_url: null },
       });
 
       if (erroAtualizacao) {
@@ -104,12 +108,12 @@ export function FormularioFotoPerfil({
         return;
       }
 
-      const avatarAntigo = caminhoAvatar(fotoAtual, usuarioId);
+      const avatarAntigo = avatarPath ?? caminhoAvatar(fotoAtual, usuarioId);
       if (avatarAntigo && avatarAntigo !== caminho) {
         await bucket.remove([avatarAntigo]);
       }
 
-      setFotoAtual(url);
+      setFotoAtual(url ?? fotoAtual);
       setArquivo(null);
       setMensagem("Foto de perfil atualizada.");
       router.refresh();

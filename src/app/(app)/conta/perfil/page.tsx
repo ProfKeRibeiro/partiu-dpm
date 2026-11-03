@@ -106,7 +106,11 @@ async function Perfil() {
         </div>
 
         <div className="border-b border-line px-5 py-5 sm:px-6">
-          <FormularioFotoPerfil nome={nome} avatarUrl={usuario.avatarUrl} />
+          <FormularioFotoPerfil
+            nome={nome}
+            avatarUrl={usuario.avatarUrl}
+            avatarPath={usuario.avatarPath}
+          />
         </div>
 
         <div className="p-5 sm:p-6">
