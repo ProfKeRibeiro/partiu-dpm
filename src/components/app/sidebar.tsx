@@ -121,15 +121,15 @@ export function Sidebar({
         ) : null}
 
         <div
-          className="pointer-events-none relative -mb-5 mt-3 h-28 w-44 opacity-90"
+          className="pointer-events-none relative -mb-5 mt-3 aspect-[177/213] max-h-[30vh] w-full overflow-hidden opacity-90"
           aria-hidden="true"
         >
           <Image
             src="/marca/seta-azul.png"
             alt=""
             fill
-            sizes="176px"
-            className="object-contain object-left-bottom"
+            sizes="(max-width: 320px) 86vw, 272px"
+            className="object-cover object-top"
           />
         </div>
       </div>
