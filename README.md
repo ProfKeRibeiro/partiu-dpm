@@ -301,6 +301,10 @@ docs/
 - O painel do evento tem o **Histórico de convocações**: quem foi chamado,
   quando recebeu o aviso, o prazo, a resposta e se confirmou, recusou ou deixou
   expirar.
+- Uma **rotina diária** da Vercel (`/api/cron/convites`, 09:00 UTC = 06:00 em
+  São Paulo, em `vercel.json`) expira convites vencidos e convoca a próxima
+  pessoa mesmo sem ninguém acessar o portal. O endpoint exige
+  `Authorization: Bearer $CRON_SECRET`.
 - **O remetente precisa estar verificado no Brevo** (Senders & Domains →
   Senders). Se o Brevo recusar por “sender not valid”, a mensagem aparece em
   Brevo → Transactional → Logs e nada chega ao participante. Certificado já
