@@ -247,6 +247,11 @@ docs/
   senha com `updateUser` e mantém a sessão aberta. A resposta do pedido é sempre
   a mesma, para não revelar quais e-mails estão cadastrados.
 - Contas sem confirmação podem pedir outro e-mail em `/reconfirmar-email`.
+- Os e-mails de **autenticação** (confirmação de cadastro e recuperação de senha)
+  saem pelo serviço padrão do Supabase Auth, que tem limite baixo de envios por
+  hora. Já os avisos de evento (inscrição, cancelamento, lista de espera,
+  presença e certificado) saem pelo Brevo, com SMTP próprio disponível como
+  evolução futura.
 - A sessão é renovada no proxy com `getClaims()` e persistida em cookies por
   `@supabase/ssr`.
 - Server Actions revalidam a sessão e os dados no servidor. Nenhuma decisão de
