@@ -103,6 +103,25 @@ export async function emitirCertificado(formData: FormData) {
   revalidar(eventoId);
 }
 
+/**
+ * Reenvia o e-mail do certificado já emitido — útil quando o envio falhou ou a
+ * pessoa perdeu a mensagem.
+ */
+export async function reenviarAvisoCertificado(formData: FormData) {
+  await garantirAdmin();
+
+  const inscricaoId = texto(formData, "inscricao_id");
+  const eventoId = texto(formData, "evento_id");
+
+  if (!REGEX_UUID.test(inscricaoId) || !REGEX_UUID.test(eventoId)) return;
+
+  const supabase = await createSupabaseServerClient();
+
+  await agendarAvisoInscricao(supabase, inscricaoId, "certificado");
+
+  revalidar(eventoId);
+}
+
 export async function cancelarCertificado(formData: FormData) {
   await garantirAdmin();
 

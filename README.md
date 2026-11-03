@@ -282,6 +282,11 @@ docs/
   evento” no cancelamento. O envio usa `BREVO_API_KEY` (prioridade) ou
   `RESEND_API_KEY`, com `EMAIL_REMETENTE` verificado no provedor; sem essas
   variáveis a inscrição continua funcionando e o envio é apenas ignorado.
+- **O remetente precisa estar verificado no Brevo** (Senders & Domains →
+  Senders). Se o Brevo recusar por “sender not valid”, a mensagem aparece em
+  Brevo → Transactional → Logs e nada chega ao participante. Certificado já
+  emitido pode ser reenviado pelo botão **Reenviar e-mail** na página do evento
+  no painel administrativo.
 - O menu da conta, tanto na topbar da área logada quanto no cabeçalho
   público (home e painel), traz **Minha área**, **Meu perfil**,
   **Administração** (só para admin) e **Sair**. Inscrições e certificados não

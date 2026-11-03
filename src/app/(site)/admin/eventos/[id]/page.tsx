@@ -19,6 +19,7 @@ import {
   definirPresenca,
   definirStatusInscricao,
   emitirCertificado,
+  reenviarAvisoCertificado,
 } from "@/lib/admin/acoes";
 import { publicarEvento } from "@/lib/admin/eventos-acoes";
 import {
@@ -493,6 +494,24 @@ async function AdminEventoConteudo({
                                   className="text-[0.68rem] font-medium text-brick underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
                                 >
                                   Cancelar certificado
+                                </button>
+                              </form>
+                              <form action={reenviarAvisoCertificado}>
+                                <input
+                                  type="hidden"
+                                  name="inscricao_id"
+                                  value={inscricao.inscricaoId}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="evento_id"
+                                  value={evento.id}
+                                />
+                                <button
+                                  type="submit"
+                                  className="text-[0.68rem] font-medium text-deep underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+                                >
+                                  Reenviar e-mail
                                 </button>
                               </form>
                             </div>
