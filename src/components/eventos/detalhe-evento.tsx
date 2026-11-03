@@ -192,7 +192,7 @@ export async function DetalheEvento({
         ? "Também haverá transmissão online para inscritos."
         : null;
   const tema = obterTemaEvento(evento.corTema);
-  const mensagemCompartilhar = `Participe do evento ${evento.titulo} na Etec DPM! ${formatarPeriodo(evento.inicio, evento.fim)} · ${localPrincipal}.`;
+  const mensagemCompartilhar = `${realizado ? "Confira o evento" : "Participe do evento"} ${evento.titulo} na Etec DPM! ${formatarPeriodo(evento.inicio, evento.fim)} · ${localPrincipal}.`;
 
   return (
     <div className="tema-evento" style={estiloTemaEvento(tema) as CSSProperties}>
