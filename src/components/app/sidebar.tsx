@@ -121,7 +121,7 @@ export function Sidebar({
         ) : null}
 
         <div
-          className="pointer-events-none relative -mb-5 mt-3 aspect-[177/213] max-h-[30vh] w-full overflow-hidden opacity-90"
+          className="pointer-events-none relative -mb-5 mt-3 -mx-3 aspect-[177/213] max-h-[30vh] w-[calc(100%+1.5rem)] overflow-hidden opacity-90"
           aria-hidden="true"
         >
           <Image
