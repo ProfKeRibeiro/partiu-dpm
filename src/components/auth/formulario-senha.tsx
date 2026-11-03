@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import { alterarSenha, type EstadoAuth } from "@/lib/auth/acoes";
+import { AvisoFormulario } from "@/components/ui/aviso-formulario";
+import { atributosDeErro, camposDoErro } from "@/components/auth/campos-com-erro";
 
 const campo =
   "mt-1.5 w-full rounded-xl border border-deep/15 bg-white px-4 py-3 text-sm text-deep shadow-sm outline-none transition-colors placeholder:text-muted/60 focus:border-brick focus:ring-4 focus:ring-brick/10";
@@ -13,26 +15,13 @@ export function FormularioSenha() {
     alterarSenha,
     null,
   );
+  const erros = camposDoErro(estado?.erro);
+  const ID_ERRO = "erro-alterar-senha";
 
   return (
     <form action={formAction} className="mt-4 space-y-4">
-      {estado?.erro ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-ember-400/40 bg-ember-50 px-4 py-3 text-sm text-molten"
-        >
-          {estado.erro}
-        </p>
-      ) : null}
-
-      {estado?.mensagem ? (
-        <p
-          role="status"
-          className="rounded-xl border border-steel-300 bg-steel-50 px-4 py-3 text-sm text-deep"
-        >
-          {estado.mensagem}
-        </p>
-      ) : null}
+      <AvisoFormulario tipo="erro" mensagem={estado?.erro} id={ID_ERRO} />
+      <AvisoFormulario tipo="sucesso" mensagem={estado?.mensagem} />
 
       <div>
         <label htmlFor="senha" className={rotulo}>
@@ -45,9 +34,13 @@ export function FormularioSenha() {
           required
           minLength={8}
           autoComplete="new-password"
+          {...atributosDeErro(erros, "senha", ID_ERRO, "ajuda-senha")}
           className={campo}
           placeholder="Mínimo de 8 caracteres"
         />
+        <p id="ajuda-senha" className="mt-1.5 text-xs text-muted">
+          Use pelo menos 8 caracteres.
+        </p>
       </div>
 
       <div>
@@ -61,6 +54,7 @@ export function FormularioSenha() {
           required
           minLength={8}
           autoComplete="new-password"
+          {...atributosDeErro(erros, "confirmacao", ID_ERRO)}
           className={campo}
           placeholder="Repita a nova senha"
         />

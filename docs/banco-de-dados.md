@@ -129,9 +129,10 @@ passa pela RPC `atualizar_perfil_participante`, que nunca altera `categoria`,
 | `id` | `uuid` | Não | `gen_random_uuid()` | PK |
 | `evento_id` | `uuid` | Não | — | FK `eventos(id)` `ON DELETE CASCADE` |
 | `participante_id` | `uuid` | Não | — | FK `participantes(id)` `ON DELETE CASCADE` |
-| `status` | `text` | Não | `'confirmada'` | `confirmada`, `cancelada`, `lista_espera` |
+| `status` | `text` | Não | `'confirmada'` | `confirmada`, `cancelada`, `lista_espera`, `aguardando_confirmacao` |
 | `data_inscricao` | `timestamptz` | Não | `now()` | — |
 | `observacoes` | `text` | Sim | — | — |
+| `convite_expira_em` | `timestamptz` | Sim | — | Prazo do convite de vaga (só em `aguardando_confirmacao`) |
 | `created_at` | `timestamptz` | Não | `now()` | — |
 
 Restrições: PK `id`; único `inscricao_unica_por_evento`
@@ -191,7 +192,7 @@ Não existe coluna `ativo`. A presença na tabela é a única condição de admi
 | --- | --- | --- | --- | --- |
 | `id` | `uuid` | Não | `gen_random_uuid()` | PK |
 | `usuario_id` | `uuid` | Não | — | FK `auth.users(id)` `ON DELETE CASCADE` |
-| `tipo` | `text` | Não | — | `inscricao_confirmada`, `inscricao_cancelada`, `lista_espera`, `presenca_registrada`, `certificado_emitido`, `certificado_cancelado` |
+| `tipo` | `text` | Não | — | `inscricao_confirmada`, `inscricao_cancelada`, `lista_espera`, `vaga_disponivel`, `presenca_registrada`, `certificado_emitido`, `certificado_cancelado` |
 | `titulo` | `text` | Não | — | — |
 | `mensagem` | `text` | Não | — | — |
 | `href` | `text` | Sim | — | Caminho interno de destino |
@@ -272,7 +273,7 @@ Três funções `SECURITY DEFINER` com `search_path = ''` alimentam
 
 | Função | Trigger | Quando dispara |
 | --- | --- | --- |
-| `notificar_inscricao()` | `notificar_inscricao` em `inscricoes` | `INSERT`/mudança de `status` para `confirmada`, `lista_espera` ou `cancelada` |
+| `notificar_inscricao()` | `notificar_inscricao` em `inscricoes` | `INSERT`/mudança de `status` para `confirmada`, `lista_espera`, `aguardando_confirmacao` (convite de vaga) ou `cancelada` |
 | `notificar_presenca()` | `notificar_presenca` em `presencas` | Presença passa de `false`/ausente para `true` |
 | `notificar_certificado()` | `notificar_certificado` em `certificados` | Certificado entra em `emitido` ou passa para `cancelado` |
 
@@ -297,8 +298,12 @@ Regras:
    A migração `20261029_publico_alvo_eventos.sql` reforça o público com um
    trigger: aluno, servidor, comunidade escolar, público externo ou todos.
 6. Rejeita duplicidade. Uma inscrição `cancelada` pode ser reativada.
-7. Conta inscrições `confirmada` e compara com `limite_vagas`.
+7. Conta inscrições `confirmada` e `aguardando_confirmacao` e compara com
+   `limite_vagas`. A RPC pega `pg_advisory_xact_lock` por evento (a mesma de
+   `convocar_lista_espera`), então uma convocação concorrente não fecha a vaga
+   no meio da inscrição.
 8. Insere ou reativa a inscrição, e o trigger atualiza `eventos.inscritos`.
+   Evento lotado gera `lista_espera`.
 
 Códigos de retorno:
 
@@ -316,8 +321,8 @@ Códigos de retorno:
 | `curso_incompativel` | Curso fora de `cursos_permitidos`. |
 | `serie_incompativel` | Série fora de `series_permitidas`. |
 | `duplicado` | Já existe inscrição confirmada. |
-| `lista_espera` | Já existe inscrição em lista de espera. |
-| `lotado` | `limite_vagas` atingido. |
+| `lista_espera` | Já existe inscrição em lista de espera, ou o evento lotou e a RPC colocou a pessoa na fila. |
+| `convite_pendente` | A pessoa tem uma vaga reservada aguardando confirmação. |
 
 Resposta de sucesso:
 
@@ -342,6 +347,9 @@ RPC transacional, `SECURITY DEFINER`, `search_path = ''`, retorna `jsonb`.
 - Retorna `ja_cancelada` se já estiver cancelada.
 - Impede cancelamento depois de `eventos.data_inicio`.
 - Atualiza `status = 'cancelada'`; o trigger decrementa o contador.
+- Encerra o convite pendente da própria inscrição
+  (`convocacoes.resultado = 'cancelado'`) e chama `convocar_lista_espera`, para a
+  vaga reservada não ficar presa nem travar a fila do evento.
 
 Códigos: `cancelada`, `ja_cancelada`, `nao_autenticado`, `nao_encontrado`,
 `cancelamento_encerrado`.
@@ -425,9 +433,49 @@ Códigos: `cancelado`, `nao_encontrado`.
 ### `public.admin_definir_status_inscricao(p_inscricao_id uuid, p_status text)`
 
 RPC `SECURITY DEFINER`, exige `eh_admin()`. Aceita `confirmada`, `cancelada` ou
-`lista_espera`; o trigger mantém `eventos.inscritos`.
+`lista_espera`; o trigger mantém `eventos.inscritos`. Se a inscrição estava em
+`aguardando_confirmacao`, encerra o convite pendente antes de aplicar o novo
+status; ao cancelar, chama `convocar_lista_espera` e devolve `convocado`,
+`convocado_inscricao_id` e `convite_expira_em`.
 
 Códigos: `atualizado`, `status_invalido`, `nao_encontrado`.
+
+### `public.convocacoes` e o fluxo de lista de espera
+
+`public.convocacoes` registra cada convite: `evento_id`, `inscricao_id`,
+`participante_id`, `convocado_em`, `expira_em`, `respondido_em`,
+`resultado` (`pendente`, `confirmado`, `recusado`, `expirado`, `cancelado`) e
+`email_enviado_em`. O índice único parcial
+`convocacoes_uma_pendente_por_evento` garante no máximo um convite pendente por
+evento. `authenticated` só tem `SELECT`, limitado ao próprio participante ou
+admin pela política de RLS.
+
+- `convocar_lista_espera(p_evento_id uuid)` — `SECURITY DEFINER`, `EXECUTE`
+  apenas para `service_role` (chamada internamente pelas demais RPCs). Exige
+  evento publicado e não iniciado, usa `pg_advisory_xact_lock` por evento, um
+  convite pendente por vez, prazo de 24h (6h se faltarem menos de 48h) e
+  `status = 'aguardando_confirmacao'` na inscrição convocada.
+- `responder_convite(p_inscricao_id uuid, p_aceitar boolean)` — `SECURITY
+  DEFINER`, `EXECUTE` apenas para `authenticated`; exige o dono. Aceitar
+  confirma; recusar cancela e convoca a próxima pessoa. Recusa aceite depois do
+  início do evento (`evento_encerrado`).
+- `expirar_convites()` — `SECURITY DEFINER`. Fecha convites órfãos (inscrição
+  que já saiu de `aguardando_confirmacao`), expira os vencidos e convoca a
+  próxima pessoa. Executável por `authenticated` (risco aceito: só age em
+  convites vencidos) e usada pelo cron com `service_role`.
+- `encerrar_convocacao_pendente(p_inscricao_id uuid, p_resultado text)` —
+  `SECURITY DEFINER`, `EXECUTE` revogado de todos os papéis; uso interno para
+  fechar o convite pendente quando a inscrição sai da reserva.
+- `posicao_lista_espera(p_inscricao_id uuid)` — `STABLE SECURITY DEFINER`,
+  `EXECUTE` apenas para `authenticated`; exige dono ou admin e devolve `NULL`
+  caso contrário.
+- `contar_lista_espera(p_evento_id uuid)` — `STABLE SECURITY DEFINER`, leitura
+  pública do tamanho da fila.
+
+O app só cria e envia e-mails depois da RPC: `registrar_aviso_email` registra o
+aviso (dono, admin ou `service_role`), e `liberar_aviso_email` (apenas
+`service_role`) apaga o registro quando o provedor falha, permitindo nova
+tentativa.
 
 ### `public.validar_certificado(p_codigo uuid)`
 
@@ -489,6 +537,8 @@ escrita.
 | `certificados` | Nenhum | `SELECT`, `INSERT`, `UPDATE`, `DELETE` (admin via RLS) |
 | `administradores` | Nenhum | `SELECT` |
 | `notificacoes` | Nenhum | `SELECT` + `UPDATE` apenas da coluna `lida_em` |
+| `convocacoes` | Nenhum | `SELECT` (dono ou admin via RLS) |
+| `avisos_email` | Nenhum | Nenhum (só `SECURITY DEFINER`) |
 
 `anon` recebe `SELECT` apenas nestas colunas de `eventos`:
 
@@ -532,6 +582,14 @@ painel).
 | `admin_cancelar_certificado(uuid)` | Não | Sim (exige `eh_admin()`) |
 | `admin_definir_status_inscricao(uuid, text)` | Não | Sim (exige `eh_admin()`) |
 | `admin_obter_evento(uuid)` | Não | Sim (exige `eh_admin()`) |
+| `convocar_lista_espera(uuid)` | Não | Não (só `service_role`, uso interno) |
+| `responder_convite(uuid, boolean)` | Não | Sim (exige o dono) |
+| `expirar_convites()` | Não | Sim (risco aceito) |
+| `encerrar_convocacao_pendente(uuid, text)` | Não | Não (uso interno) |
+| `posicao_lista_espera(uuid)` | Não | Sim (exige o dono ou admin) |
+| `contar_lista_espera(uuid)` | Sim | Sim |
+| `registrar_aviso_email(uuid, text, integer)` | Não | Sim (exige o dono, admin ou `service_role`) |
+| `liberar_aviso_email(uuid, text)` | Não | Não (só `service_role`) |
 | `validar_certificado(uuid)` | Sim | Sim |
 
 ## Impacto no frontend
@@ -606,8 +664,8 @@ Situação após as migrações:
 
 | Nível | Item | Situação |
 | --- | --- | --- |
-| WARN | `anon` executa 1 função `SECURITY DEFINER` | `validar_certificado`, intencional e de leitura pública. |
-| WARN | `authenticated` executa 11 funções `SECURITY DEFINER` | Intencional; são funções de negócio que fixam `search_path` e validam o chamador/`eh_admin()`. |
+| WARN | `anon` executa 2 funções `SECURITY DEFINER` | `validar_certificado` (leitura pública) e `contar_lista_espera` (contador exibido na página do evento), ambas intencionais e só de leitura. |
+| WARN | `authenticated` executa 19 funções `SECURITY DEFINER` | Intencional; são funções de negócio que fixam `search_path` e validam o chamador/`eh_admin()`. Funções de trigger não são executáveis por `anon`/`authenticated`. |
 | WARN | Proteção de senha vazada desativada | Ativar em Auth → Password Security. |
 | WARN | Políticas permissivas múltiplas em `eventos`, `certificados` e `presencas` | As políticas `ALL` de admin coexistem com as de leitura; performance, não falha. |
 | INFO | FKs sem índice | Resolvido: `certificados_criado_por_idx`, `eventos_criado_por_idx` e `presencas_registrado_por_idx`. |

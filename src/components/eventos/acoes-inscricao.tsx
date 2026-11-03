@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useActionState } from "react";
 import { IconeAlerta, IconeCheck, IconeSetaDiagonal } from "@/components/ui/icons";
+import { useDialogoAcessivel } from "@/components/ui/use-dialogo";
 import { formatarDataHora } from "@/lib/format";
 import {
   cancelarInscricao,
@@ -53,17 +54,13 @@ export function AcoesInscricao({
     useActionState<EstadoInscricao, FormData>(responderConvite, null);
   const [modalCancelamento, setModalCancelamento] = useState(false);
   const formCancelar = useRef<HTMLFormElement>(null);
+  const painelModal = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!modalCancelamento) return;
-
-    const aoTeclar = (evento: KeyboardEvent) => {
-      if (evento.key === "Escape") setModalCancelamento(false);
-    };
-
-    window.addEventListener("keydown", aoTeclar);
-    return () => window.removeEventListener("keydown", aoTeclar);
-  }, [modalCancelamento]);
+  useDialogoAcessivel({
+    aberto: modalCancelamento,
+    onFechar: () => setModalCancelamento(false),
+    painelRef: painelModal,
+  });
 
   const confirmada = inscricao?.status === "confirmada";
   const mensagem = estadoInscricao ?? estadoCancelamento;
@@ -143,11 +140,13 @@ export function AcoesInscricao({
                 onClick={() => setModalCancelamento(false)}
               >
                 <div
+                  ref={painelModal}
                   role="dialog"
                   aria-modal="true"
                   aria-labelledby="titulo-cancelar-inscricao"
                   aria-describedby="texto-cancelar-inscricao"
-                  className="w-full max-w-sm rounded-2xl border border-deep/10 bg-white p-5 text-left shadow-xl"
+                  tabIndex={-1}
+                  className="w-full max-w-sm rounded-2xl border border-deep/10 bg-white p-5 text-left shadow-xl outline-none"
                   onClick={(evento) => evento.stopPropagation()}
                 >
                   <h2

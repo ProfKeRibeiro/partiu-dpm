@@ -4,6 +4,7 @@ import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { enviarAvisoEvento } from "@/lib/email/avisos";
+import { liberarAviso } from "@/lib/email/dedupe";
 import { emailConfigurado } from "@/lib/email/enviar";
 
 type ClienteSupabase = SupabaseClient;
@@ -32,13 +33,24 @@ export async function agendarConvite(
     return;
   }
 
-  const { data: podeEnviar } = await admin.rpc("registrar_aviso_email", {
-    p_inscricao_id: inscricaoId,
-    p_tipo: "convite",
-    p_janela_segundos: 300,
-  });
+  const { data: avisoId, error: erroAviso } = await admin.rpc(
+    "registrar_aviso_email",
+    {
+      p_inscricao_id: inscricaoId,
+      p_tipo: "convite",
+      p_janela_segundos: 300,
+    },
+  );
 
-  if (podeEnviar !== true) return;
+  if (erroAviso) {
+    console.warn(
+      "[partiu-dpm] Falha ao registrar aviso de convite:",
+      erroAviso.message,
+    );
+    return;
+  }
+
+  if (!avisoId) return;
 
   const { data: inscricao } = await admin
     .from("inscricoes")
@@ -46,7 +58,10 @@ export async function agendarConvite(
     .eq("id", inscricaoId)
     .maybeSingle();
 
-  if (!inscricao) return;
+  if (!inscricao) {
+    await liberarAviso(avisoId as string);
+    return;
+  }
 
   const [{ data: evento }, { data: participante }, usuario] = await Promise.all([
     admin
@@ -66,6 +81,7 @@ export async function agendarConvite(
 
   if (!evento || !email) {
     console.warn("[partiu-dpm] Convocado sem e-mail para avisar.");
+    await liberarAviso(avisoId as string);
     return;
   }
 
@@ -85,12 +101,21 @@ export async function agendarConvite(
   };
 
   if (imediato) {
-    await enviarAvisoEvento({ tipo: "convite", dados });
+    const resultado = await enviarAvisoEvento({ tipo: "convite", dados });
+
+    if (!resultado.ok && resultado.motivo === "falha") {
+      await liberarAviso(avisoId as string);
+    }
+
     return;
   }
 
   after(async () => {
-    await enviarAvisoEvento({ tipo: "convite", dados });
+    const resultado = await enviarAvisoEvento({ tipo: "convite", dados });
+
+    if (!resultado.ok && resultado.motivo === "falha") {
+      await liberarAviso(avisoId as string);
+    }
   });
 }
 

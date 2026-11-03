@@ -9,6 +9,7 @@ import {
   IconeFechar,
   IconeQr,
 } from "@/components/ui/icons";
+import { useDialogoAcessivel } from "@/components/ui/use-dialogo";
 
 const REGEX_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,10 +35,17 @@ export function LeitorQrCode() {
 
   const [aberto, setAberto] = useState(false);
   const [sessao, setSessao] = useState(0);
+  const painelRef = useRef<HTMLDivElement>(null);
   const [estado, setEstado] = useState<EstadoLeitor>({
     erro: null,
     lendo: false,
     nomeCamera: null,
+  });
+
+  useDialogoAcessivel({
+    aberto,
+    onFechar: () => setAberto(false),
+    painelRef,
   });
 
   const interromper = useCallback(() => {
@@ -162,16 +170,6 @@ export function LeitorQrCode() {
     return interromper;
   }, [interromper]);
 
-  function aoPressionarTecla(evento: KeyboardEvent) {
-    if (evento.key === "Escape") setAberto(false);
-  }
-
-  useEffect(() => {
-    if (!aberto) return;
-    document.addEventListener("keydown", aoPressionarTecla);
-    return () => document.removeEventListener("keydown", aoPressionarTecla);
-  }, [aberto]);
-
   return (
     <>
       <button
@@ -185,77 +183,82 @@ export function LeitorQrCode() {
 
       {aberto ? (
         <div
+          ref={painelRef}
           role="dialog"
           aria-modal="true"
           aria-label="Leitor de QR code de certificado"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/70 p-4 backdrop-blur-sm"
+          tabIndex={-1}
+          className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-navy-950/70 p-4 backdrop-blur-sm outline-none"
         >
-          <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-deep text-papaya shadow-elevada">
-            <button
-              type="button"
-              aria-label="Fechar leitor"
-              onClick={() => setAberto(false)}
-              className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-papaya/25 bg-deep/70 text-papaya transition-colors hover:bg-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-papaya"
-            >
-              <IconeFechar className="h-4 w-4" />
-            </button>
+          <div className="flex min-h-full items-center justify-center">
+            <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-deep text-papaya shadow-elevada">
+              <button
+                type="button"
+                data-foco-inicial
+                aria-label="Fechar leitor"
+                onClick={() => setAberto(false)}
+                className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-papaya/25 bg-deep/70 text-papaya transition-colors hover:bg-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-papaya"
+              >
+                <IconeFechar className="h-4 w-4" />
+              </button>
 
-            <div className="relative aspect-[3/4] w-full overflow-hidden bg-black">
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                autoPlay
-                className="h-full w-full object-cover"
-              />
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="h-56 w-56 rounded-2xl border-2 border-papaya/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+              <div className="relative aspect-[3/4] min-h-0 w-full shrink overflow-hidden bg-black">
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  autoPlay
+                  className="h-full w-full object-cover"
+                />
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="aspect-square h-4/5 max-h-56 rounded-2xl border-2 border-papaya/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+                </div>
+
+                {!estado.lendo && !estado.erro ? (
+                  <p className="absolute inset-x-0 bottom-6 text-center text-xs font-medium text-papaya/80">
+                    Abrindo a câmera…
+                  </p>
+                ) : null}
               </div>
 
-              {!estado.lendo && !estado.erro ? (
-                <p className="absolute inset-x-0 bottom-6 text-center text-xs font-medium text-papaya/80">
-                  Abrindo a câmera…
+              <div className="shrink-0 space-y-3 p-5">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <IconeCamera className="h-4 w-4" />
+                  Aponte para o QR do certificado
                 </p>
-              ) : null}
-            </div>
-
-            <div className="space-y-3 p-5">
-              <p className="flex items-center gap-2 text-sm font-semibold">
-                <IconeCamera className="h-4 w-4" />
-                Aponte para o QR do certificado
-              </p>
-              <p className="text-xs leading-relaxed text-papaya/75">
-                O QR fica na caixa “QR code de validação”, no canto inferior
-                esquerdo do certificado. Ao reconhecer, abrimos a validação.
-              </p>
-
-              {estado.erro ? (
-                <p
-                  role="alert"
-                  className="rounded-xl border border-ember-300/50 bg-ember-50 px-3.5 py-2.5 text-xs leading-relaxed text-molten"
-                >
-                  {estado.erro}
+                <p className="text-xs leading-relaxed text-papaya/75">
+                  O QR fica na caixa “QR code de validação”, no canto inferior
+                  esquerdo do certificado. Ao reconhecer, abrimos a validação.
                 </p>
-              ) : null}
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    interromper();
-                    setEstado({ erro: null, lendo: false, nomeCamera: null });
-                    setSessao((valor) => valor + 1);
-                  }}
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-papaya/30 bg-papaya/10 px-4 text-xs font-semibold text-papaya transition-colors hover:bg-papaya/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-papaya"
-                >
-                  <IconeAtualizar className="h-3.5 w-3.5" />
-                  Recarregar câmera
-                </button>
-                {estado.lendo ? (
-                  <span className="inline-flex h-9 items-center rounded-full border border-steel-300/60 bg-steel/15 px-4 text-xs font-semibold text-steel-300">
-                    Buscando…
-                  </span>
+                {estado.erro ? (
+                  <p
+                    role="alert"
+                    className="rounded-xl border border-ember-300/50 bg-ember-50 px-3.5 py-2.5 text-xs leading-relaxed text-molten"
+                  >
+                    {estado.erro}
+                  </p>
                 ) : null}
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      interromper();
+                      setEstado({ erro: null, lendo: false, nomeCamera: null });
+                      setSessao((valor) => valor + 1);
+                    }}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-papaya/30 bg-papaya/10 px-4 text-xs font-semibold text-papaya transition-colors hover:bg-papaya/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-papaya"
+                  >
+                    <IconeAtualizar className="h-3.5 w-3.5" />
+                    Recarregar câmera
+                  </button>
+                  {estado.lendo ? (
+                    <span className="inline-flex h-9 items-center rounded-full border border-steel-300/60 bg-steel/15 px-4 text-xs font-semibold text-steel-300">
+                      Buscando…
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>

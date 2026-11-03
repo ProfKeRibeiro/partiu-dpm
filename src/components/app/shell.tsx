@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Sidebar } from "@/components/app/sidebar";
 import { Topbar } from "@/components/app/topbar";
 import { IconeFechar } from "@/components/ui/icons";
+import { useDialogoAcessivel } from "@/components/ui/use-dialogo";
 import type { Notificacao } from "@/types/notificacao";
 
 export function AppShell({
@@ -24,24 +25,13 @@ export function AppShell({
   children: ReactNode;
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
+  const painelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!menuAberto) return;
-
-    const overflowOriginal = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    function aoPressionar(evento: KeyboardEvent) {
-      if (evento.key === "Escape") setMenuAberto(false);
-    }
-
-    document.addEventListener("keydown", aoPressionar);
-
-    return () => {
-      document.body.style.overflow = overflowOriginal;
-      document.removeEventListener("keydown", aoPressionar);
-    };
-  }, [menuAberto]);
+  useDialogoAcessivel({
+    aberto: menuAberto,
+    onFechar: () => setMenuAberto(false),
+    painelRef,
+  });
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -73,12 +63,18 @@ export function AppShell({
             className="absolute inset-0 h-full w-full cursor-default bg-navy-950/60 backdrop-blur-sm"
           />
           <div
+            ref={painelRef}
             role="dialog"
             aria-modal="true"
             aria-label="Menu da área do participante"
-            className="absolute inset-y-0 left-0 w-[288px] max-w-[86vw] shadow-elevada"
+            tabIndex={-1}
+            className="absolute inset-y-0 left-0 w-[288px] max-w-[86vw] shadow-elevada outline-none"
           >
-            <Sidebar admin={admin} onNavigate={() => setMenuAberto(false)} />
+            <Sidebar
+              admin={admin}
+              contextoDrawer
+              onNavigate={() => setMenuAberto(false)}
+            />
             <button
               type="button"
               onClick={() => setMenuAberto(false)}

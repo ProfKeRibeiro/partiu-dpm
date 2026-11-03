@@ -3,6 +3,7 @@ import "server-only";
 import { after } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { enviarAvisoEvento, type AvisoTipo } from "@/lib/email/avisos";
+import { liberarAviso } from "@/lib/email/dedupe";
 import { emailConfigurado } from "@/lib/email/enviar";
 
 type ClienteSupabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -38,14 +39,27 @@ export async function agendarAvisoInscricao(
   if (!emailConfigurado()) return;
 
   /* Deduplica: evita segundo e-mail por duplo clique, atualização da página ou
-   * repetição de uma operação já concluída. O reenvio manual usa janela 0. */
-  const { data: podeEnviar } = await supabase.rpc("registrar_aviso_email", {
-    p_inscricao_id: inscricaoId,
-    p_tipo: tipo,
-    p_janela_segundos: janelaSegundos,
-  });
+   * repetição de uma operação já concluída. O reenvio manual usa janela 0.
+   * A RPC devolve o id do aviso criado (ou null quando duplicado/sem acesso);
+   * esse id é o que permite liberar só o próprio registro. */
+  const { data: avisoId, error: erroAviso } = await supabase.rpc(
+    "registrar_aviso_email",
+    {
+      p_inscricao_id: inscricaoId,
+      p_tipo: tipo,
+      p_janela_segundos: janelaSegundos,
+    },
+  );
 
-  if (podeEnviar !== true) return;
+  if (erroAviso) {
+    console.warn(
+      "[partiu-dpm] Falha ao registrar aviso de e-mail:",
+      erroAviso.message,
+    );
+    return;
+  }
+
+  if (!avisoId) return;
 
   const { data, error } = await supabase.rpc("dados_aviso_inscricao", {
     p_inscricao_id: inscricaoId,
@@ -56,13 +70,17 @@ export async function agendarAvisoInscricao(
       "[partiu-dpm] Sem dados para o e-mail de aviso:",
       error?.message ?? "vazio",
     );
+    await liberarAviso(avisoId as string);
     return;
   }
 
   const bruto = data as DadosDoBanco;
   const evento = bruto.evento;
 
-  if (!bruto.email || !evento?.id) return;
+  if (!bruto.email || !evento?.id) {
+    await liberarAviso(avisoId as string);
+    return;
+  }
 
   const dados = {
     nome: bruto.nome ?? "",
@@ -80,6 +98,10 @@ export async function agendarAvisoInscricao(
   };
 
   after(async () => {
-    await enviarAvisoEvento({ tipo, dados });
+    const resultado = await enviarAvisoEvento({ tipo, dados });
+
+    if (!resultado.ok && resultado.motivo === "falha") {
+      await liberarAviso(avisoId as string);
+    }
   });
 }

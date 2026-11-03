@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { IconePessoa } from "@/components/ui/icons";
+import { Avatar } from "@/components/ui/avatar";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -127,20 +126,13 @@ export function FormularioFotoPerfil({
   return (
     <section aria-labelledby="titulo-foto-perfil">
       <div className="flex flex-wrap items-center gap-4">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deep text-papaya ring-2 ring-papaya">
-          {fotoAtual ? (
-            <Image
-              src={fotoAtual}
-              alt={`Foto de perfil de ${nome}`}
-              width={56}
-              height={56}
-              unoptimized
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <IconePessoa className="h-6 w-6" />
-          )}
-        </span>
+        <Avatar
+          src={fotoAtual}
+          nome={nome}
+          tamanho={56}
+          alt={`Foto de perfil de ${nome}`}
+          className="h-14 w-14 ring-2 ring-papaya"
+        />
         <div className="min-w-0 flex-1">
           <h3
             id="titulo-foto-perfil"

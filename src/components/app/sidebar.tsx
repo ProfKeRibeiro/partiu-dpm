@@ -37,10 +37,13 @@ export function Sidebar({
   admin,
   onNavigate,
   className = "",
+  contextoDrawer = false,
 }: {
   admin: boolean;
   onNavigate?: () => void;
   className?: string;
+  /** No drawer mobile o foco é programático, então o anel precisa aparecer. */
+  contextoDrawer?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -66,7 +69,7 @@ export function Sidebar({
         className="relative flex-1 px-3 py-2"
       >
         <ul className="space-y-1.5">
-          {itens.map((item) => {
+          {itens.map((item, indice) => {
             const Icone = item.icone;
             const ativo = estaAtivo(pathname, item.href);
 
@@ -76,7 +79,14 @@ export function Sidebar({
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={ativo ? "page" : undefined}
+                  data-foco-inicial={
+                    contextoDrawer && indice === 0 ? "true" : undefined
+                  }
                   className={`flex min-h-12 items-center gap-3 rounded-xl px-3.5 py-2.5 text-[0.95rem] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-papaya ${
+                    contextoDrawer
+                      ? "focus:outline-2 focus:outline-offset-2 focus:outline-papaya"
+                      : ""
+                  } ${
                     ativo
                       ? "bg-brick text-white shadow-[0_10px_24px_-14px_rgba(0,0,0,0.9)]"
                       : "text-papaya/80 hover:bg-papaya/[0.08] hover:text-papaya"

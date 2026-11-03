@@ -60,6 +60,23 @@ function remetente() {
   };
 }
 
+/**
+ * Envia a requisição e repete uma vez em falha transitória (5xx ou 429).
+ *
+ * O provedor costuma devolver 429 em rajadas e 5xx em instabilidade curta.
+ * Repetir aqui evita perder o aviso e evita depender do registro de
+ * deduplicação para uma nova tentativa.
+ */
+async function enviarComRetentativa(url: string, init: RequestInit) {
+  const primeira = await fetch(url, init);
+
+  if (primeira.status < 500 && primeira.status !== 429) return primeira;
+
+  await new Promise((resolver) => setTimeout(resolver, 400));
+
+  return fetch(url, init);
+}
+
 export async function enviarEmail(
   mensagem: MensagemEmail,
 ): Promise<ResultadoEnvio> {
@@ -76,26 +93,29 @@ export async function enviarEmail(
 
   try {
     if (brevo) {
-      const resposta = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "api-key": brevo,
-          "content-type": "application/json",
-          accept: "application/json",
+      const resposta = await enviarComRetentativa(
+        "https://api.brevo.com/v3/smtp/email",
+        {
+          method: "POST",
+          headers: {
+            "api-key": brevo,
+            "content-type": "application/json",
+            accept: "application/json",
+          },
+          body: JSON.stringify({
+            sender: de,
+            to: [
+              {
+                email: mensagem.para,
+                name: mensagem.nome?.trim() || undefined,
+              },
+            ],
+            subject: mensagem.assunto,
+            htmlContent: mensagem.html,
+            textContent: mensagem.texto,
+          }),
         },
-        body: JSON.stringify({
-          sender: de,
-          to: [
-            {
-              email: mensagem.para,
-              name: mensagem.nome?.trim() || undefined,
-            },
-          ],
-          subject: mensagem.assunto,
-          htmlContent: mensagem.html,
-          textContent: mensagem.texto,
-        }),
-      });
+      );
 
       if (!resposta.ok) {
         const corpo = await resposta.text().catch(() => "");
@@ -114,20 +134,23 @@ export async function enviarEmail(
       return { ok: true, provedor: "brevo", id: dados?.messageId ?? null };
     }
 
-    const resposta = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${resend}`,
-        "content-type": "application/json",
+    const resposta = await enviarComRetentativa(
+      "https://api.resend.com/emails",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${resend}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          from: `${de.name} <${de.email}>`,
+          to: [mensagem.para],
+          subject: mensagem.assunto,
+          html: mensagem.html,
+          text: mensagem.texto,
+        }),
       },
-      body: JSON.stringify({
-        from: `${de.name} <${de.email}>`,
-        to: [mensagem.para],
-        subject: mensagem.assunto,
-        html: mensagem.html,
-        text: mensagem.texto,
-      }),
-    });
+    );
 
     if (!resposta.ok) {
       const corpo = await resposta.text().catch(() => "");

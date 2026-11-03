@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import { sair } from "@/lib/auth/acoes";
+import { Avatar } from "@/components/ui/avatar";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import {
@@ -113,19 +113,8 @@ export function SiteHeader({
                 onClick={() => setMenuContaAberto((valor) => !valor)}
                 className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-deep/20 bg-white px-4 text-sm font-semibold text-deep transition-colors hover:border-deep/35 hover:bg-papaya/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
               >
-                <span className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deep text-papaya">
-                  {avatarUrl ? (
-                    <Image
-                      src={avatarUrl}
-                      alt=""
-                      width={32}
-                      height={32}
-                      unoptimized
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <IconePessoa className="h-4 w-4" />
-                  )}
+                <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+                  <Avatar src={avatarUrl} nome={nome} tamanho={32} className="h-8 w-8" />
                 </span>
                 <span className="max-w-[7rem] truncate">
                   {nome?.trim().split(/\s+/)[0] ?? "Minha conta"}
@@ -238,19 +227,8 @@ export function SiteHeader({
               {estadoSessao === "autenticado" ? (
                 <div>
                   <div className="mb-3 flex items-center gap-3 rounded-xl bg-canvas p-3">
-                    <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deep text-papaya">
-                      {avatarUrl ? (
-                        <Image
-                          src={avatarUrl}
-                          alt=""
-                          width={40}
-                          height={40}
-                          unoptimized
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <IconePessoa className="h-5 w-5" />
-                      )}
+                    <span className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+                      <Avatar src={avatarUrl} nome={nome} tamanho={40} className="h-10 w-10" />
                     </span>
                     <span className="truncate text-sm font-semibold text-deep">
                       {nome?.trim().split(/\s+/)[0] ?? "Minha conta"}

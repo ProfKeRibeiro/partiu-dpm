@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/brand/logo";
+import { Avatar } from "@/components/ui/avatar";
 import {
   IconeBusca,
   IconeCasa,
@@ -294,20 +294,12 @@ export function Topbar({
               aria-label="Abrir menu da conta"
               className="flex items-center gap-2 rounded-full p-1 pr-1.5 transition-colors hover:bg-papaya/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick sm:pr-2.5"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-deep text-papaya ring-2 ring-white">
-                {avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt=""
-                    width={36}
-                    height={36}
-                    unoptimized
-                    className="h-full w-full rounded-full object-cover"
-                  />
-                ) : (
-                  <IconePessoa className="h-[1.15rem] w-[1.15rem]" />
-                )}
-              </span>
+              <Avatar
+                src={avatarUrl}
+                nome={nome}
+                tamanho={36}
+                className="h-9 w-9 ring-2 ring-white"
+              />
               <span className="hidden text-left sm:block">
                 <span className="block text-[0.65rem] leading-tight text-muted">
                   Olá,

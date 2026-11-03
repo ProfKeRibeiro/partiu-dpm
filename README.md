@@ -289,13 +289,18 @@ docs/
 - `public.avisos_email` registra cada aviso enviado: a função
   `registrar_aviso_email` ignora repetições dentro de 5 minutos, então atualizar
   a página ou repetir uma operação já concluída não gera segundo e-mail. O
-  botão **Reenviar e-mail** usa janela zero e sempre envia.
+  botão **Reenviar e-mail** usa janela zero e sempre envia. Se o provedor recusar
+  o envio, o registro é liberado por `liberar_aviso_email` e a próxima ação pode
+  tentar de novo; falhas de rede, 429 e 5xx têm uma repetição automática.
 - Evento lotado oferece **Entrar na lista de espera** ao participante (a RPC
   `inscrever_em_evento` grava o status `lista_espera` quando as vagas acabaram).
 - Quando alguém cancela, `convocar_lista_espera` reserva a vaga para a próxima
   pessoa da fila: o status vira `aguardando_confirmacao`, ela recebe e-mail e
   aviso no sino, e o prazo é de 24h (6h se o evento estiver a menos de 48h).
   Aceitar confirma; recusar ou deixar expirar chama a próxima da fila.
+- Se quem tem a vaga reservada cancela antes de confirmar (ou o admin muda o
+  status pelo painel), o convite pendente é encerrado na hora e a próxima pessoa
+  da fila já é convocada. Sem isso, o convite órfão travava a fila do evento.
 - Ao entrar na lista de espera a pessoa vê a explicação do prazo e a sua
   **posição na fila**, também incluída no e-mail de confirmação da espera.
 - O painel do evento tem o **Histórico de convocações**: quem foi chamado,
@@ -477,9 +482,19 @@ Em 30/10/2026, com build de produção e os dados reais da organização
 | `/certificados/<cancelado>` | Corpo renderiza a página 404 (soft 404 conhecido). |
 | Smoke HTTP | `/`, `/certificados`, `/certificados/<emitido>`, `/admin`, `/conta`, `/entrar` — todos com a resposta esperada. |
 
-Os dados de teste foram removidos: `eventos`, `inscricoes`, `presencas`,
-`certificados` e `participantes` estão em `0`; `administradores` tem `1`;
-`auth.users` tem `1` (o admin real).
+Em 03/11/2026, com testes transacionais no Supabase (todos revertidos ao final):
+
+| Verificação | Resultado |
+| --- | --- |
+| Cancelar inscrição em `aguardando_confirmacao` | Convite vira `cancelado` e a próxima pessoa da fila é convocada na mesma chamada. |
+| Admin altera o status da inscrição reservada | Mesmo comportamento, via `admin_definir_status_inscricao`. |
+| `expirar_convites` com convite órfão | Convite órfão vira `cancelado`; a fila do evento volta a convocar. |
+| Notificação de convocação | `vaga_disponivel` criada no sino com o prazo no texto. |
+| `liberar_aviso_email` | Registro de aviso removido, liberando nova tentativa de envio. |
+
+Naquele teste de 30/10, os dados temporários foram removidos: `eventos`,
+`inscricoes`, `presencas`, `certificados` e `participantes` ficaram em `0`;
+`administradores` com `1` e `auth.users` com `1` (o admin real).
 
 ## Comportamento conhecido de 404
 
@@ -527,11 +542,10 @@ portal não abrir vazio.
    a seção acima.
 4. **Storage de certificados**: hoje o certificado é renderizado como SVG para
    impressão; `arquivo_url` existe no schema, mas não há upload/geração de PDF.
-5. **Eventos pendentes de público detalhado**: `publico_alvo_eventos` e
-   `cor_tema` já estão em uso na interface, mas as migrações SQL correspondentes
-   seguem pendentes de aplicação (veja `docs/banco-de-dados.md`).
-6. **Testes automatizados**: a validação é manual (build, tipos, smoke HTTP
-   e screenshots). Não há suíte de testes unitários ou E2E no repositório.
+5. **Testes automatizados**: há uma suíte unitária com Vitest (`npm test`,
+   cobrindo `rota-segura` e utilitários de evento) e um smoke HTTP
+   (`scripts/qa-smoke.mjs`) rodado em produção; os fluxos de autenticação e
+   banco ainda dependem de validação manual.
 
 ## Documentação
 

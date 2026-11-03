@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { IconeCalendario, IconeCheck, IconeSetaDireita } from "@/components/ui/icons";
+import { AvisoFormulario } from "@/components/ui/aviso-formulario";
 import type { PublicoAlvo } from "@/types/evento";
 import {
   salvarEvento,
@@ -93,22 +94,12 @@ export function FormularioEvento({
       {valoresIniciais ? (
         <input type="hidden" name="evento_id" value={valoresIniciais.id} />
       ) : null}
-      {estado?.erro ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-ember-400/40 bg-ember-50 px-4 py-3 text-sm text-molten"
-        >
-          {estado.erro}
-        </p>
-      ) : null}
-      {estado?.mensagem ? (
-        <p
-          role="status"
-          className="rounded-xl border border-steel-300 bg-steel-50 px-4 py-3 text-sm font-medium text-deep"
-        >
-          {estado.mensagem}
-        </p>
-      ) : null}
+      <AvisoFormulario tipo="erro" mensagem={estado?.erro} id="erro-evento" />
+      <AvisoFormulario
+        tipo="sucesso"
+        mensagem={estado?.mensagem}
+        className="font-medium"
+      />
 
       <section className="rounded-2xl border border-deep/10 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-center gap-3">
@@ -126,23 +117,53 @@ export function FormularioEvento({
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <label className="sm:col-span-2">
             <span className={label}>Título *</span>
-            <input name="titulo" required minLength={3} maxLength={160} defaultValue={valoresIniciais?.titulo} className={input} placeholder="Ex.: Oficina de currículo e LinkedIn" />
+            <input
+              name="titulo"
+              required
+              minLength={3}
+              maxLength={160}
+              defaultValue={valoresIniciais?.titulo}
+              className={input}
+              placeholder="Ex.: Oficina de currículo e LinkedIn"
+            />
           </label>
           <label>
             <span className={label}>Tipo *</span>
-            <select name="tipo" defaultValue={valoresIniciais?.tipo ?? "palestra"} className={input}>
-              <option value="palestra">Palestra</option><option value="oficina">Oficina</option><option value="curso">Curso</option><option value="feira">Feira</option><option value="treinamento">Treinamento</option><option value="outro">Outro</option>
+            <select
+              name="tipo"
+              defaultValue={valoresIniciais?.tipo ?? "palestra"}
+              className={input}
+            >
+              <option value="palestra">Palestra</option>
+              <option value="oficina">Oficina</option>
+              <option value="curso">Curso</option>
+              <option value="feira">Feira</option>
+              <option value="treinamento">Treinamento</option>
+              <option value="outro">Outro</option>
             </select>
           </label>
           <label>
             <span className={label}>Modalidade *</span>
-            <select name="modalidade" defaultValue={valoresIniciais?.modalidade ?? "presencial"} className={input}>
-              <option value="presencial">Presencial</option><option value="online">Online</option><option value="hibrido">Híbrido</option>
+            <select
+              name="modalidade"
+              defaultValue={valoresIniciais?.modalidade ?? "presencial"}
+              className={input}
+            >
+              <option value="presencial">Presencial</option>
+              <option value="online">Online</option>
+              <option value="hibrido">Híbrido</option>
             </select>
           </label>
           <label className="sm:col-span-2">
             <span className={label}>Descrição</span>
-            <textarea name="descricao" rows={5} maxLength={4000} defaultValue={valoresIniciais?.descricao} className={input} placeholder="Apresente o objetivo, o conteúdo e para quem o encontro é indicado." />
+            <textarea
+              name="descricao"
+              rows={5}
+              maxLength={4000}
+              defaultValue={valoresIniciais?.descricao}
+              className={input}
+              placeholder="Apresente o objetivo, o conteúdo e para quem o encontro é indicado."
+            />
           </label>
         </div>
       </section>
@@ -150,14 +171,100 @@ export function FormularioEvento({
       <section className="rounded-2xl border border-deep/10 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="font-display text-lg font-semibold text-deep">Data, acesso e vagas</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          <label><span className={label}>Início *</span><input type="datetime-local" name="data_inicio" required defaultValue={isoParaDataLocal(valoresIniciais?.inicio)} className={input} /></label>
-          <label><span className={label}>Término *</span><input type="datetime-local" name="data_fim" required defaultValue={isoParaDataLocal(valoresIniciais?.fim)} className={input} /></label>
-          <label><span className={label}>Abertura das inscrições</span><input type="datetime-local" name="inicio_inscricoes" defaultValue={isoParaDataLocal(valoresIniciais?.inscricoesInicio)} className={input} /></label>
-          <label><span className={label}>Encerramento das inscrições</span><input type="datetime-local" name="fim_inscricoes" defaultValue={isoParaDataLocal(valoresIniciais?.inscricoesFim)} className={input} /></label>
-          <label><span className={label}>Local</span><input name="local_evento" maxLength={200} defaultValue={valoresIniciais?.local ?? ""} className={input} placeholder="Ex.: Auditório da ETEC" /></label>
-          <label><span className={label}>Link de acesso</span><input type="url" name="link_evento" maxLength={500} defaultValue={valoresIniciais?.link ?? ""} className={input} placeholder="https://..." /></label>
-          <label><span className={label}>Limite de vagas</span><input type="number" name="limite_vagas" min="1" step="1" defaultValue={valoresIniciais?.limiteVagas ?? ""} className={input} placeholder="Deixe em branco para ilimitado" /></label>
-          <label><span className={label}>Status *</span><select name="status" defaultValue={valoresIniciais?.status ?? "rascunho"} disabled={valoresIniciais?.status === "encerrado"} className={input}><option value="rascunho">Rascunho</option><option value="publicado">Publicado</option><option value="cancelado">Cancelado</option><option value="encerrado">Encerrado</option></select>{valoresIniciais?.status === "encerrado" ? (<><input type="hidden" name="status" value="encerrado" /><span className="mt-1 block text-xs leading-relaxed text-muted">Evento encerrado: não é possível reabri-lo, para preservar presenças e certificados já emitidos.</span></>) : null}</label>
+          <label>
+            <span className={label}>Início *</span>
+            <input
+              type="datetime-local"
+              name="data_inicio"
+              required
+              defaultValue={isoParaDataLocal(valoresIniciais?.inicio)}
+              className={input}
+            />
+          </label>
+          <label>
+            <span className={label}>Término *</span>
+            <input
+              type="datetime-local"
+              name="data_fim"
+              required
+              defaultValue={isoParaDataLocal(valoresIniciais?.fim)}
+              className={input}
+            />
+          </label>
+          <label>
+            <span className={label}>Abertura das inscrições</span>
+            <input
+              type="datetime-local"
+              name="inicio_inscricoes"
+              defaultValue={isoParaDataLocal(valoresIniciais?.inscricoesInicio)}
+              className={input}
+            />
+          </label>
+          <label>
+            <span className={label}>Encerramento das inscrições</span>
+            <input
+              type="datetime-local"
+              name="fim_inscricoes"
+              defaultValue={isoParaDataLocal(valoresIniciais?.inscricoesFim)}
+              className={input}
+            />
+          </label>
+          <label>
+            <span className={label}>Local</span>
+            <input
+              name="local_evento"
+              maxLength={200}
+              defaultValue={valoresIniciais?.local ?? ""}
+              className={input}
+              placeholder="Ex.: Auditório da ETEC"
+            />
+          </label>
+          <label>
+            <span className={label}>Link de acesso</span>
+            <input
+              type="url"
+              name="link_evento"
+              maxLength={500}
+              defaultValue={valoresIniciais?.link ?? ""}
+              className={input}
+              placeholder="https://..."
+            />
+          </label>
+          <label>
+            <span className={label}>Limite de vagas</span>
+            <input
+              type="number"
+              name="limite_vagas"
+              min="1"
+              step="1"
+              defaultValue={valoresIniciais?.limiteVagas ?? ""}
+              className={input}
+              placeholder="Deixe em branco para ilimitado"
+            />
+          </label>
+          <label>
+            <span className={label}>Status *</span>
+            <select
+              name="status"
+              defaultValue={valoresIniciais?.status ?? "rascunho"}
+              disabled={valoresIniciais?.status === "encerrado"}
+              className={input}
+            >
+              <option value="rascunho">Rascunho</option>
+              <option value="publicado">Publicado</option>
+              <option value="cancelado">Cancelado</option>
+              <option value="encerrado">Encerrado</option>
+            </select>
+            {valoresIniciais?.status === "encerrado" ? (
+              <>
+                <input type="hidden" name="status" value="encerrado" />
+                <span className="mt-1 block text-xs leading-relaxed text-muted">
+                  Evento encerrado: não é possível reabri-lo, para preservar
+                  presenças e certificados já emitidos.
+                </span>
+              </>
+            ) : null}
+          </label>
         </div>
       </section>
 
@@ -178,7 +285,17 @@ export function FormularioEvento({
               ))}
             </select>
           </label>
-          <label><span className={label}>Imagem de capa (URL)</span><input type="url" name="imagem_url" maxLength={500} defaultValue={valoresIniciais?.imagemUrl ?? ""} className={input} placeholder="https://..." /></label>
+          <label>
+            <span className={label}>Imagem de capa (URL)</span>
+            <input
+              type="url"
+              name="imagem_url"
+              maxLength={500}
+              defaultValue={valoresIniciais?.imagemUrl ?? ""}
+              className={input}
+              placeholder="https://..."
+            />
+          </label>
           <fieldset>
             <legend className={label}>Cursos permitidos</legend>
             <p className="mt-1 text-xs leading-relaxed text-muted">

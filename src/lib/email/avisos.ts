@@ -51,6 +51,25 @@ function escapar(valor: string) {
     .replace(/'/g, "&#39;");
 }
 
+/**
+ * Escapa o texto e envolve em `<strong>` a primeira ocorrência do trecho.
+ *
+ * Diferente de `escapar(texto).replace(escapar(trecho), ...)`, funciona com
+ * títulos que contêm `&`, `<`, `>` ou aspas, porque compara o texto original.
+ */
+function destacar(texto: string, trecho: string) {
+  const alvo = trecho.trim();
+  const indice = alvo ? texto.indexOf(alvo) : -1;
+
+  if (indice === -1) return escapar(texto);
+
+  return [
+    escapar(texto.slice(0, indice)),
+    `<strong>${escapar(alvo)}</strong>`,
+    escapar(texto.slice(indice + alvo.length)),
+  ].join("");
+}
+
 function primeiroNome(nome: string) {
   const limpo = nome.trim();
 
@@ -87,7 +106,7 @@ function localDoEvento(evento: EventoDoEmail) {
 type Aviso = {
   assunto: string;
   titulo: string;
-  abertura: (saudacao: string, evento: EventoDoEmail) => string;
+  abertura: (evento: EventoDoEmail) => string;
   linhas: (dados: DadosAviso) => Array<[string, string]>;
   paragrafos: string[];
   fechamento: string;
@@ -99,8 +118,8 @@ const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
   inscrito: (dados) => ({
     assunto: `Inscrição confirmada em ${dados.evento.titulo}`,
     titulo: "Inscrição confirmada",
-    abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Sua inscrição foi realizada com sucesso. Você está confirmado(a) no evento ${evento.titulo}.`,
+    abertura: (evento) =>
+      `Sua inscrição foi realizada com sucesso. Você está confirmado(a) no evento ${evento.titulo}.`,
     linhas: (d) => [
       ["Data", dataDoEvento(d.evento)],
       ["Horário", horarioDoEvento(d.evento)],
@@ -118,8 +137,8 @@ const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
   cancelado: (dados) => ({
     assunto: `Cancelamento de inscrição – ${dados.evento.titulo}`,
     titulo: "Inscrição cancelada",
-    abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Informamos que sua inscrição no evento ${evento.titulo} foi cancelada.`,
+    abertura: (evento) =>
+      `Informamos que sua inscrição no evento ${evento.titulo} foi cancelada.`,
     linhas: (d) => [
       ["Evento", d.evento.titulo],
       ["Data", dataDoEvento(d.evento)],
@@ -137,8 +156,8 @@ const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
   lista_espera: (dados) => ({
     assunto: `Você está na lista de espera – ${dados.evento.titulo}`,
     titulo: "Você está na lista de espera",
-    abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Recebemos sua inscrição para o evento ${evento.titulo}. No momento, todas as vagas disponíveis estão preenchidas, por isso sua inscrição foi registrada na lista de espera.`,
+    abertura: (evento) =>
+      `Recebemos sua inscrição para o evento ${evento.titulo}. No momento, todas as vagas disponíveis estão preenchidas, por isso sua inscrição foi registrada na lista de espera.`,
     linhas: (d) => {
       const base: Array<[string, string]> = [
         ["Evento", d.evento.titulo],
@@ -164,8 +183,8 @@ const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
   convite: (dados) => ({
     assunto: `Surgiu uma vaga – ${dados.evento.titulo}`,
     titulo: "Surgiu uma vaga para você",
-    abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Uma vaga abriu em ${evento.titulo} e ela está reservada para você.`,
+    abertura: (evento) =>
+      `Uma vaga abriu em ${evento.titulo} e ela está reservada para você.`,
     linhas: (d) => {
       const base: Array<[string, string]> = [
         ["Evento", d.evento.titulo],
@@ -189,10 +208,11 @@ const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
     botao: "Confirmar minha vaga",
     url: `${siteUrl}/conta/inscricoes`,
   }),
-  presenca: (dados) => ({    assunto: `Presença confirmada – ${dados.evento.titulo}`,
+  presenca: (dados) => ({
+    assunto: `Presença confirmada – ${dados.evento.titulo}`,
     titulo: "Presença confirmada",
-    abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Sua presença no evento ${evento.titulo} foi registrada pela organização.`,
+    abertura: (evento) =>
+      `Sua presença no evento ${evento.titulo} foi registrada pela organização.`,
     linhas: (d) => [
       ["Evento", d.evento.titulo],
       ["Data", dataDoEvento(d.evento)],
@@ -209,8 +229,8 @@ const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
   certificado: (dados) => ({
     assunto: `Seu certificado está disponível! – ${dados.evento.titulo}`,
     titulo: "Seu certificado está disponível",
-    abertura: (saudacao, evento) =>
-      `Olá, ${saudacao}! Temos uma novidade: seu certificado de participação no evento ${evento.titulo} já está disponível!`,
+    abertura: (evento) =>
+      `Temos uma novidade: seu certificado de participação no evento ${evento.titulo} já está disponível!`,
     linhas: (d) => {
       const carga = obterCargaHorariaEmHoras(d.evento.inicio, d.evento.fim);
       const base: Array<[string, string]> = [
@@ -236,22 +256,24 @@ const AVISOS: Record<AvisoTipo, (dados: DadosAviso) => Aviso> = {
 };
 
 /**
- * Aviso automático do sistema por e-mail.
+ * Monta assunto, texto puro e HTML de um aviso, sem enviar.
  *
- * O texto segue os modelos definidos pela Etec DPM: saudação pelo primeiro
- * nome, detalhes do evento em tabela, botão de ação e assinatura da equipe.
+ * Separado do envio para permitir conferir o conteúdo (e reutilizar o modelo)
+ * sem depender do provedor de e-mail.
  */
-export async function enviarAvisoEvento(params: {
+export function montarAvisoEmail(params: {
   tipo: AvisoTipo;
   dados: DadosAviso;
-}): Promise<ResultadoEnvio> {
+}): { assunto: string; texto: string; html: string } {
   const { tipo, dados } = params;
   const aviso = AVISOS[tipo](dados);
   const saudacao = primeiroNome(dados.nome) || "participante";
-  const abertura = aviso.abertura(saudacao, dados.evento);
+  const abertura = aviso.abertura(dados.evento);
   const linhas = aviso.linhas(dados);
+  const preheader = `${aviso.titulo} — ${dados.evento.titulo}`.slice(0, 140);
 
   const texto = [
+    `Olá, ${saudacao}!`,
     abertura,
     "",
     ...linhas.map(([rotulo, valor]) => `${rotulo}: ${valor}`),
@@ -286,6 +308,7 @@ export async function enviarAvisoEvento(params: {
   const html = `<!doctype html>
 <html lang="pt-BR">
   <body style="margin:0;padding:0;background:${COR_FUNDO};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+    <div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;">${escapar(preheader)}</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COR_FUNDO};padding:28px 12px;">
       <tr>
         <td align="center">
@@ -302,7 +325,7 @@ export async function enviarAvisoEvento(params: {
             <tr>
               <td style="padding:28px 30px 24px;">
                 <p style="margin:0 0 10px;font-size:16px;font-weight:700;color:${COR_CABECALHO};">Olá, ${escapar(saudacao)}!</p>
-                <p style="margin:0 0 18px;font-size:14px;line-height:1.65;color:${COR_TEXTO};">${escapar(abertura).replace(escapar(dados.evento.titulo), `<strong>${escapar(dados.evento.titulo)}</strong>`)}</p>
+                <p style="margin:0 0 18px;font-size:14px;line-height:1.65;color:${COR_TEXTO};">${destacar(abertura, dados.evento.titulo)}</p>
                 <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${COR_DESTAQUE};">Detalhes</p>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;">
                   ${linhasHtml}
@@ -328,10 +351,25 @@ export async function enviarAvisoEvento(params: {
   </body>
 </html>`;
 
+  return { assunto: aviso.assunto, texto, html };
+}
+
+/**
+ * Aviso automático do sistema por e-mail.
+ *
+ * O texto segue os modelos definidos pela Etec DPM: saudação pelo primeiro
+ * nome, detalhes do evento em tabela, botão de ação e assinatura da equipe.
+ */
+export async function enviarAvisoEvento(params: {
+  tipo: AvisoTipo;
+  dados: DadosAviso;
+}): Promise<ResultadoEnvio> {
+  const { assunto, texto, html } = montarAvisoEmail(params);
+
   return enviarEmail({
-    para: dados.email,
-    nome: dados.nome,
-    assunto: aviso.assunto,
+    para: params.dados.email,
+    nome: params.dados.nome,
+    assunto,
     texto,
     html,
   });

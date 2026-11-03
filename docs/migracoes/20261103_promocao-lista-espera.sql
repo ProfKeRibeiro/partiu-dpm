@@ -1,4 +1,7 @@
 -- Aplicada no Supabase em 03/11/2026.
+-- HISTÓRICO: esta migração foi substituída por `20261103_convites-lista-espera.sql`
+-- (convite com prazo) e a função `promover_lista_espera` foi removida em
+-- `20261103_convites-sem-bloqueio.sql`. O fluxo atual usa `convocar_lista_espera`.
 -- Promoção automática da lista de espera quando uma vaga é liberada.
 --
 -- A promoção roda dentro de `cancelar_inscricao` (participante) e de

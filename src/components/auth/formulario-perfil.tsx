@@ -3,6 +3,8 @@
 import { useActionState } from "react";
 import { useState } from "react";
 import { atualizarPerfil, type EstadoAuth } from "@/lib/auth/acoes";
+import { AvisoFormulario } from "@/components/ui/aviso-formulario";
+import { atributosDeErro, camposDoErro } from "@/components/auth/campos-com-erro";
 import { CURSOS_DISPONIVEIS } from "@/lib/cursos";
 
 const campo =
@@ -79,26 +81,13 @@ export function FormularioPerfil({ perfil }: { perfil: DadosPerfil }) {
   const [outraInstituicao, setOutraInstituicao] = useState(
     tipoInstituicao === "outro" ? instituicaoExistente : "",
   );
+  const erros = camposDoErro(estado?.erro);
+  const ID_ERRO = "erro-perfil";
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
-      {estado?.erro ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-ember-400/40 bg-ember-50 px-4 py-3 text-sm text-molten"
-        >
-          {estado.erro}
-        </p>
-      ) : null}
-
-      {estado?.mensagem ? (
-        <p
-          role="status"
-          className="rounded-xl border border-steel-300 bg-steel-50 px-4 py-3 text-sm text-deep"
-        >
-          {estado.mensagem}
-        </p>
-      ) : null}
+      <AvisoFormulario tipo="erro" mensagem={estado?.erro} id={ID_ERRO} />
+      <AvisoFormulario tipo="sucesso" mensagem={estado?.mensagem} />
 
       <div>
         <label htmlFor="nome_completo" className={rotulo}>
@@ -113,6 +102,7 @@ export function FormularioPerfil({ perfil }: { perfil: DadosPerfil }) {
           maxLength={120}
           autoComplete="name"
           defaultValue={perfil.nome_completo}
+          {...atributosDeErro(erros, "nome", ID_ERRO)}
           className={campo}
         />
       </div>
@@ -127,6 +117,7 @@ export function FormularioPerfil({ perfil }: { perfil: DadosPerfil }) {
             name="curso"
             className={campo}
             defaultValue={cursoAtual}
+            {...atributosDeErro(erros, "curso", ID_ERRO)}
           >
             <option value="">Selecione seu curso</option>
             {cursoAtual &&
@@ -150,6 +141,7 @@ export function FormularioPerfil({ perfil }: { perfil: DadosPerfil }) {
             name="ano_serie"
             className={campo}
             defaultValue={serieAtual}
+            {...atributosDeErro(erros, "serie", ID_ERRO)}
           >
             <option value="">Selecione sua série</option>
             {!seriesDisponiveis.includes(
@@ -175,6 +167,7 @@ export function FormularioPerfil({ perfil }: { perfil: DadosPerfil }) {
           value={tipoInstituicao}
           onChange={(event) => setTipoInstituicao(event.target.value)}
           className={campo}
+          {...atributosDeErro(erros, "instituicao", ID_ERRO)}
         >
           <option value="">Selecione sua instituição</option>
           <option value="etec">ETEC Darcy Pereira de Moraes</option>
@@ -192,6 +185,7 @@ export function FormularioPerfil({ perfil }: { perfil: DadosPerfil }) {
             autoComplete="organization"
             value={outraInstituicao}
             onChange={(event) => setOutraInstituicao(event.target.value)}
+            {...atributosDeErro(erros, "instituicao", ID_ERRO)}
             className={campo}
             placeholder="Digite o nome da sua instituição"
           />
@@ -210,6 +204,7 @@ export function FormularioPerfil({ perfil }: { perfil: DadosPerfil }) {
           type="url"
           autoComplete="url"
           defaultValue={perfil.linkedin_url ?? ""}
+          {...atributosDeErro(erros, "linkedin", ID_ERRO)}
           className={campo}
           placeholder="https://www.linkedin.com/in/..."
         />

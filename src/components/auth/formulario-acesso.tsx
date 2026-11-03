@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { useActionState } from "react";
 import { criarConta, entrar, type EstadoAuth } from "@/lib/auth/acoes";
+import { AvisoFormulario } from "@/components/ui/aviso-formulario";
+import { atributosDeErro, camposDoErro } from "@/components/auth/campos-com-erro";
 import { CURSOS_DISPONIVEIS } from "@/lib/cursos";
 
 const campo =
@@ -30,28 +32,19 @@ export function FormularioAcesso({
   const [categoria, setCategoria] = useState<"aluno" | "servidor" | "externo">(
     "aluno",
   );
+  const erros = camposDoErro(estado?.erro);
+  const ID_ERRO = "erro-acesso";
 
   return (
     <form action={formAction} className="mt-6 space-y-4">
       <input type="hidden" name="next" value={next} />
 
-      {estado?.erro ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-ember-400/40 bg-ember-50 px-4 py-3 text-sm text-molten"
-        >
-          {estado.erro}
-        </p>
-      ) : null}
-
-      {estado?.mensagem ? (
-        <p
-          role="status"
-          className="rounded-xl border border-steel-300 bg-steel-50 px-4 py-3 text-sm text-deep"
-        >
-          {estado.mensagem}
-        </p>
-      ) : null}
+      <AvisoFormulario tipo="erro" mensagem={estado?.erro} id={ID_ERRO} />
+      <AvisoFormulario
+        tipo="sucesso"
+        mensagem={estado?.mensagem}
+        id="aviso-acesso"
+      />
 
       {modo === "criar" ? (
         <>
@@ -67,6 +60,7 @@ export function FormularioAcesso({
               required
               minLength={3}
               maxLength={120}
+              {...atributosDeErro(erros, "nome", ID_ERRO)}
               className={campo}
               placeholder="Como você quer aparecer no certificado"
             />
@@ -84,6 +78,7 @@ export function FormularioAcesso({
               onChange={(event) =>
                 setCategoria(event.target.value as typeof categoria)
               }
+              {...atributosDeErro(erros, "categoria", ID_ERRO)}
               className={campo}
             >
               <option value="aluno">Aluno</option>
@@ -97,7 +92,13 @@ export function FormularioAcesso({
               <label htmlFor="curso" className={rotulo}>
                 Curso
               </label>
-              <select id="curso" name="curso" required className={campo}>
+              <select
+                id="curso"
+                name="curso"
+                required
+                {...atributosDeErro(erros, "curso", ID_ERRO)}
+                className={campo}
+              >
                 <option value="">Selecione seu curso</option>
                 {CURSOS_DISPONIVEIS.map((curso) => (
                   <option key={curso.valor} value={curso.valor}>
@@ -120,21 +121,28 @@ export function FormularioAcesso({
           type="email"
           autoComplete="email"
           required
+          {...atributosDeErro(
+            erros,
+            "email",
+            ID_ERRO,
+            modo === "criar" && categoria === "aluno" ? "ajuda-email" : null,
+          )}
           className={campo}
           placeholder="voce@exemplo.com"
         />
-            {modo === "criar" && categoria === "aluno" ? (
-              <p className="mt-2 text-xs leading-relaxed text-muted">
-                <strong className="font-semibold text-deep">
-                  Recomendamos fortemente
-                </strong>{" "}
-                que alunos usem o e-mail institucional
-                <span className="font-semibold text-deep">
-                  {" "}@aluno.cps.sp.gov.br
-                </span>
-                .
-              </p>
-            ) : null}
+        {modo === "criar" && categoria === "aluno" ? (
+          <p id="ajuda-email" className="mt-2 text-xs leading-relaxed text-muted">
+            <strong className="font-semibold text-deep">
+              Recomendamos fortemente
+            </strong>{" "}
+            que alunos usem o e-mail institucional
+            <span className="font-semibold text-deep">
+              {" "}
+              @aluno.cps.sp.gov.br
+            </span>
+            .
+          </p>
+        ) : null}
       </div>
 
       <div>
@@ -148,11 +156,17 @@ export function FormularioAcesso({
           autoComplete={modo === "criar" ? "new-password" : "current-password"}
           required
           minLength={modo === "criar" ? 8 : undefined}
+          {...atributosDeErro(
+            erros,
+            "senha",
+            ID_ERRO,
+            modo === "criar" ? "ajuda-senha" : null,
+          )}
           className={campo}
           placeholder={modo === "criar" ? "Mínimo de 8 caracteres" : "Sua senha"}
         />
         {modo === "criar" ? (
-          <p className="mt-1.5 text-xs text-muted">
+          <p id="ajuda-senha" className="mt-1.5 text-xs text-muted">
             Use uma senha longa e única. Ela nunca é exibida para a organização.
           </p>
         ) : (

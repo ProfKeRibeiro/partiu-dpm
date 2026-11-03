@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -9,6 +8,7 @@ import { FormularioFotoPerfil } from "@/components/auth/formulario-foto-perfil";
 import { FormularioSenha } from "@/components/auth/formulario-senha";
 import { CabecalhoApp } from "@/components/app/cabecalho";
 import { AppContainer } from "@/components/app/container";
+import { Avatar } from "@/components/ui/avatar";
 import {
   IconeCadeado,
   IconeEscudo,
@@ -17,7 +17,7 @@ import {
   IconeSair,
   IconeSetaDiagonal,
 } from "@/components/ui/icons";
-import { iniciais, rotuloCategoria } from "@/lib/app-utils";
+import { rotuloCategoria } from "@/lib/app-utils";
 import { sair } from "@/lib/auth/acoes";
 import { obterPerfil, obterUsuario, usuarioEhAdmin } from "@/lib/auth/sessao";
 
@@ -66,20 +66,13 @@ async function Perfil() {
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
       <section className="overflow-hidden rounded-2xl border border-deep/10 bg-white shadow-suave">
         <div className="flex flex-wrap items-center gap-4 border-b border-line bg-gradient-to-r from-shell/70 to-white p-5 sm:p-6">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-deep font-display text-lg font-bold text-papaya ring-4 ring-white">
-            {usuario.avatarUrl ? (
-              <Image
-                src={usuario.avatarUrl}
-                alt={`Foto de perfil de ${nome}`}
-                width={64}
-                height={64}
-                unoptimized
-                className="h-full w-full rounded-full object-cover"
-              />
-            ) : (
-              iniciais(nome)
-            )}
-          </span>
+          <Avatar
+            src={usuario.avatarUrl}
+            nome={nome}
+            tamanho={64}
+            alt={`Foto de perfil de ${nome}`}
+            className="h-16 w-16 ring-4 ring-white"
+          />
           <div className="min-w-0 flex-1">
             <h2 className="truncate font-display text-xl font-semibold text-deep">
               {nome}

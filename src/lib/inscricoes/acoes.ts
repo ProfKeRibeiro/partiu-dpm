@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { emailConfigurado } from "@/lib/email/enviar";
+import { liberarAviso } from "@/lib/email/dedupe";
 import { enviarAvisoEvento, type AvisoTipo } from "@/lib/email/avisos";
 import { agendarConvite, expirarConvitesEAvisar } from "@/lib/email/promocao";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -39,6 +40,8 @@ const MENSAGENS: Record<string, string> = {
     "Sua série/ano não está entre os permitidos para este evento.",
   evento_indisponivel: "Este evento não está disponível para inscrições.",
   evento_encerrado: "Este evento já foi encerrado.",
+  evento_iniciado:
+    "Este evento já começou. A vaga da lista de espera não pode mais ser confirmada.",
   evento_nao_encontrado: "Evento não encontrado.",
   perfil_nao_encontrado:
     "Seu perfil de participante ainda não existe. Atualize seus dados e tente novamente.",
@@ -86,13 +89,24 @@ async function agendarAviso(
   /* Evita e-mail repetido quando a pessoa atualiza a página ou repete a
    * operação: a RPC só registra o aviso se não houve outro igual nos últimos
    * 5 minutos. */
-  const { data: podeEnviar } = await supabase.rpc("registrar_aviso_email", {
-    p_inscricao_id: inscricaoId,
-    p_tipo: tipo,
-    p_janela_segundos: 300,
-  });
+  const { data: avisoId, error: erroAviso } = await supabase.rpc(
+    "registrar_aviso_email",
+    {
+      p_inscricao_id: inscricaoId,
+      p_tipo: tipo,
+      p_janela_segundos: 300,
+    },
+  );
 
-  if (podeEnviar !== true) return;
+  if (erroAviso) {
+    console.warn(
+      "[partiu-dpm] Falha ao registrar aviso de e-mail:",
+      erroAviso.message,
+    );
+    return;
+  }
+
+  if (!avisoId) return;
 
   const [{ data: evento }, { data: participante }] = await Promise.all([
     supabase
@@ -109,6 +123,7 @@ async function agendarAviso(
 
   if (!evento) {
     console.warn("[partiu-dpm] Evento não encontrado para o e-mail de aviso.");
+    await liberarAviso(avisoId as string);
     return;
   }
 
@@ -126,7 +141,7 @@ async function agendarAviso(
   }
 
   after(async () => {
-    await enviarAvisoEvento({
+    const resultado = await enviarAvisoEvento({
       tipo,
       dados: {
         nome,
@@ -143,6 +158,10 @@ async function agendarAviso(
         },
       },
     });
+
+    if (!resultado.ok && resultado.motivo === "falha") {
+      await liberarAviso(avisoId as string);
+    }
   });
 }
 
