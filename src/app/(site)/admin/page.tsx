@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { AcessoRestrito } from "@/components/auth/acesso-restrito";
+import { BotaoExcluirEvento } from "@/components/admin/botao-excluir-evento";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import {
@@ -271,6 +272,10 @@ export default async function AdminPage() {
                               Gerenciar
                               <IconeSetaDireita className="h-3.5 w-3.5" />
                             </Link>
+                            <BotaoExcluirEvento
+                              eventoId={evento.id}
+                              variante="icone"
+                            />
                           </div>
                         </td>
                       </tr>

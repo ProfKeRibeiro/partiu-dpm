@@ -25,6 +25,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Trash2,
   TriangleAlert,
   UserRound,
   Users,
@@ -79,6 +80,7 @@ export const IconeQr = criarIcone(QrCode, "IconeQr");
 export const IconeCamera = criarIcone(Camera, "IconeCamera");
 export const IconeMais = criarIcone(Plus, "IconeMais");
 export const IconeAtualizar = criarIcone(RefreshCw, "IconeAtualizar");
+export const IconeLixeira = criarIcone(Trash2, "IconeLixeira");
 
 /*
  * Marcas de compartilhamento.
