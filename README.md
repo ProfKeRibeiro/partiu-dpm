@@ -248,10 +248,10 @@ docs/
   a mesma, para não revelar quais e-mails estão cadastrados.
 - Contas sem confirmação podem pedir outro e-mail em `/reconfirmar-email`.
 - Os e-mails de **autenticação** (confirmação de cadastro e recuperação de senha)
-  saem pelo serviço padrão do Supabase Auth, que tem limite baixo de envios por
-  hora. Já os avisos de evento (inscrição, cancelamento, lista de espera,
-  presença e certificado) saem pelo Brevo, com SMTP próprio disponível como
-  evolução futura.
+  saem pelo **SMTP do Brevo**, com remetente `profke.ribeiro@gmail.com` e
+  templates em português no padrão visual do portal. O limite de envio do Auth
+  foi elevado para **100 e-mails por hora**. Já os avisos de evento (inscrição,
+  cancelamento, lista de espera, presença e certificado) saem pela API do Brevo.
 - A sessão é renovada no proxy com `getClaims()` e persistida em cookies por
   `@supabase/ssr`.
 - Server Actions revalidam a sessão e os dados no servidor. Nenhuma decisão de
