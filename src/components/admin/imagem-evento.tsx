@@ -33,19 +33,18 @@ const TIPOS: Record<string, string> = {
 };
 const MARCADOR_BUCKET = "/storage/v1/object/public/eventos/";
 
-const campo =
-  "mt-1.5 w-full rounded-xl border border-deep/15 bg-white px-3 py-2.5 text-sm text-deep outline-none transition focus:border-brick focus:ring-4 focus:ring-brick/10";
 const rotulo = "block text-sm font-semibold text-deep";
 
-/** Aceita `{ url }` do contrato atual da ação. */
-
 /**
- * Capa do evento: envio de arquivo para o bucket `eventos` e edição manual da
- * URL (eventos antigos ou imagens hospedadas fora do portal).
+ * Capa do evento: envio de arquivo para o bucket `eventos`.
+ *
+ * O campo `imagem_url` continua sendo enviado junto do formulário (oculto),
+ * com o valor atual ou a URL devolvida pelo upload. Sem isso, salvar o evento
+ * sem trocar a imagem apagaria a capa. Eventos antigos com imagem fora do
+ * bucket continuam mostrando a prévia e podem ser substituídos por upload.
  *
  * O botão de envio é `type="button"` de propósito: o componente vive dentro do
- * formulário de evento, e um `<form>` aninhado quebraria o envio principal. A
- * URL escolhida entra no campo `imagem_url`, que é o que `salvarEvento` lê.
+ * formulário de evento, e um `<form>` aninhado quebraria o envio principal.
  */
 export function ImagemDoEvento({
   valorInicial,
@@ -63,11 +62,13 @@ export function ImagemDoEvento({
 
   const urlValida = /^(https?:\/\/|\/)/i.test(url.trim());
   const enviadaPeloPortal = url.includes(MARCADOR_BUCKET);
+  const legado = urlValida && !enviadaPeloPortal;
+
   const situacao = !urlValida
     ? "Sem imagem de capa."
     : enviadaPeloPortal
-      ? "Em uso: imagem enviada pelo portal."
-      : "Em uso: URL externa informada manualmente.";
+      ? "Imagem enviada pelo portal."
+      : "Imagem atual fora do portal.";
 
   function selecionarArquivo(evento: ChangeEvent<HTMLInputElement>) {
     const escolhido = evento.target.files?.[0] ?? null;
@@ -129,6 +130,9 @@ export function ImagemDoEvento({
 
   return (
     <div className={className}>
+      {/* Mantém a capa ao salvar sem trocar imagem. */}
+      <input type="hidden" name="imagem_url" value={url} />
+
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className={rotulo}>Imagem de capa</p>
         <p className="text-xs text-muted">{situacao}</p>
@@ -152,7 +156,7 @@ export function ImagemDoEvento({
           )}
         </div>
 
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-3">
           <div>
             <label
               htmlFor="arquivo-imagem-evento"
@@ -188,34 +192,22 @@ export function ImagemDoEvento({
               ) : null}
             </div>
 
-            <p id="ajuda-imagem-evento" className="mt-2 text-xs leading-relaxed text-muted">
+            <p
+              id="ajuda-imagem-evento"
+              className="mt-2 text-xs leading-relaxed text-muted"
+            >
               JPG, PNG ou WebP, até 5 MB. O arquivo é validado também no
               servidor antes de ser publicado.
             </p>
+
+            {legado ? (
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                Imagem atual anterior ao portal — envie uma nova para atualizar.
+              </p>
+            ) : null}
           </div>
 
-          <div>
-            <label htmlFor="imagem_url" className={rotulo}>
-              URL da imagem (alternativa)
-            </label>
-            <input
-              id="imagem_url"
-              name="imagem_url"
-              type="url"
-              maxLength={500}
-              value={url}
-              onChange={(evento) => setUrl(evento.target.value)}
-              className={campo}
-              placeholder="https://..."
-              aria-describedby="ajuda-imagem-url"
-            />
-            <p id="ajuda-imagem-url" className="mt-1.5 text-xs leading-relaxed text-muted">
-              Para eventos antigos ou imagens hospedadas fora do portal. Ao
-              enviar um arquivo, este campo é preenchido automaticamente.
-            </p>
-          </div>
-
-          {url ? (
+          {urlValida ? (
             <button
               type="button"
               onClick={() => {

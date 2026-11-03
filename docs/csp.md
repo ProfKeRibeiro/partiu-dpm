@@ -17,7 +17,7 @@
 default-src 'self';
 script-src 'self' 'unsafe-inline';
 style-src 'self' 'unsafe-inline';
-img-src 'self' data: blob: https://*.supabase.co https:;
+img-src 'self' data: blob: https://*.supabase.co;
 font-src 'self' data:;
 connect-src 'self' https://*.supabase.co;
 media-src 'self' blob:;
@@ -35,8 +35,7 @@ form-action 'self'
 | `script-src 'unsafe-inline'` | O Next injeta scripts de bootstrap inline e o shell estático (PPR) não recebe nonce. Sem isso, a hidratação quebra. Ver a tentativa de nonce abaixo. |
 | `style-src 'unsafe-inline'` | Tailwind/Next geram estilos inline no HTML. |
 | `img-src data: blob:` | Logos/ícones embutidos e pré-visualizações locais. |
-| `img-src https://*.supabase.co` | Fotos de perfil e imagens no Storage. |
-| `img-src https:` | O painel aceita qualquer URL de imagem para o evento (o "MongoDB Day" usa uma miniatura externa). Imagem não executa script, então o risco é contido; o ideal é migrar as imagens para o Storage e remover esta diretiva. |
+| `img-src https://*.supabase.co` | Avatares e capas de evento enviados pelo portal, servidos pelo Storage. |
 | `connect-src https://*.supabase.co` | Chamadas do navegador ao Supabase (login, upload de avatar, leitura pública). |
 | `media-src blob:` / `worker-src blob:` | Leitor de QR (`getUserMedia` + canvas/jsQR). |
 | `object-src 'none'`, `base-uri 'self'` | Bloqueia plugins e sequestro de URLs relativas. |
@@ -104,7 +103,7 @@ Navegador: Microsoft Edge headless via `puppeteer-core`, capturando violações 
 
 - `/conta` e `/admin` autenticados não foram testados em navegador por falta de sessão de teste. As páginas usam os mesmos assets do restante do site; o único recurso adicional é o avatar do Storage, já coberto por `img-src https://*.supabase.co`.
 - O teste de câmera usou mídia simulada do navegador; a permissão real depende do usuário.
-- `img-src https:` mantém dependência de hosts externos para imagens de evento cadastradas no painel. Migrar para o Storage permite voltar à lista fechada.
+- `img-src` agora aceita apenas o próprio site e o Storage do Supabase; capas antigas foram migradas e o painel envia somente por upload. Se um dia for necessário exibir imagem externa, a diretiva precisa ser revista.
 
 ## Como reverter
 
@@ -112,6 +111,6 @@ Se algo quebrar em produção, trocar a chave do header de `Content-Security-Pol
 
 ## Evolução recomendada
 
-1. Migrar as imagens de evento para o Storage e remover `https:` de `img-src`.
+1. Manter novas imagens sempre no Storage (o painel já só oferece upload).
 2. Reavaliar nonce somente se as rotas deixarem de usar PPR/pré-renderização estática. Hoje o nonce quebra o shell estático (ver seção acima).
 3. Adicionar `report-uri`/`report-to` para coletar violações em produção.
