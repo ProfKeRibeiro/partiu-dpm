@@ -1,6 +1,7 @@
 import "server-only";
 
-import { cache } from "react";
+import { cache as cacheReact } from "react";
+import { urlAvatarAssinada } from "@/lib/avatar-assinado";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type Usuario = {
@@ -12,7 +13,6 @@ export type Usuario = {
 };
 
 const MARCADOR_AVATAR_PUBLICO = "/storage/v1/object/public/avatars/";
-const VALIDADE_AVATAR_SEGUNDOS = 60 * 60 * 2;
 
 /**
  * O avatar novo é gravado como caminho (`avatar_path`). Contas antigas ainda
@@ -48,7 +48,7 @@ export type Perfil = {
   linkedin_url: string | null;
 };
 
-export const obterUsuario = cache(async (): Promise<Usuario | null> => {
+export const obterUsuario = cacheReact(async (): Promise<Usuario | null> => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
 
@@ -58,15 +58,9 @@ export const obterUsuario = cache(async (): Promise<Usuario | null> => {
     data.user.user_metadata as Record<string, unknown>,
   );
 
-  let avatarUrl: string | null = null;
-
-  if (avatarPath) {
-    const { data: assinada } = await supabase.storage
-      .from("avatars")
-      .createSignedUrl(avatarPath, VALIDADE_AVATAR_SEGUNDOS);
-
-    avatarUrl = assinada?.signedUrl ?? null;
-  }
+  const avatarUrl = avatarPath
+    ? await urlAvatarAssinada(supabase, data.user.id, avatarPath)
+    : null;
 
   return {
     id: data.user.id,
@@ -81,7 +75,7 @@ export const obterUsuario = cache(async (): Promise<Usuario | null> => {
   };
 });
 
-export const obterPerfil = cache(async (): Promise<Perfil | null> => {
+export const obterPerfil = cacheReact(async (): Promise<Perfil | null> => {
   const usuario = await obterUsuario();
   if (!usuario) return null;
 
@@ -99,7 +93,7 @@ export const obterPerfil = cache(async (): Promise<Perfil | null> => {
   return data as Perfil;
 });
 
-export const usuarioEhAdmin = cache(async (): Promise<boolean> => {
+export const usuarioEhAdmin = cacheReact(async (): Promise<boolean> => {
   const usuario = await obterUsuario();
   if (!usuario) return false;
 

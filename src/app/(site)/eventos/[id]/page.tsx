@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cacheLife, cacheTag } from "next/cache";
 import { Suspense } from "react";
 import { Container } from "@/components/ui/container";
 import { DetalheEvento } from "@/components/eventos/detalhe-evento";
@@ -7,6 +8,24 @@ import { formatarDataExtensa, formatarHorario } from "@/lib/format";
 
 const DESCRICAO_PADRAO =
   "Informações completas sobre o evento: data, local, público-alvo, vagas e inscrições.";
+
+/**
+ * Busca usada só pelos metadados (og:title, canonical, descrição).
+ *
+ * Os metadados são resolvidos antes do primeiro byte quando o visitante é um
+ * bot que não executa JavaScript (WhatsApp, Facebook), então vale manter essa
+ * leitura em cache em vez de pagar a consulta ao Supabase em cada raspagem.
+ * O conteúdo da página continua sempre atualizado: `DetalheEvento` consulta o
+ * evento direto, sem passar por este cache.
+ */
+async function eventoParaMetadados(id: string) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("eventos");
+
+  const { evento } = await buscarEventoPublicado(id);
+  return evento;
+}
 
 function resumirDescricao(texto: string) {
   const limpo = texto.replace(/\s+/g, " ").trim();
@@ -23,7 +42,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const { evento } = await buscarEventoPublicado(id);
+  const evento = await eventoParaMetadados(id);
 
   if (!evento) {
     return {

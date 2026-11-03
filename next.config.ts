@@ -32,18 +32,21 @@ if (supabaseUrl) {
 }
 
 /**
- * CSP em modo observação: registra no console o que seria bloqueado, sem
- * impedir o carregamento. Depois de revisar os avisos, trocar a chave para
- * `Content-Security-Policy` para bloquear de fato.
+ * CSP bloqueante.
  *
  * `'unsafe-inline'` é necessário para os scripts de bootstrap do Next e para
  * os estilos do Tailwind; a evolução é usar nonce e remover essa exceção.
+ *
+ * `https:` está liberado em `img-src` porque a imagem do evento é cadastrada
+ * pelo painel com URL livre (o "MongoDB Day" usa uma miniatura externa). Imagem
+ * não executa script, então o risco fica contido; o ideal é migrar as imagens
+ * para o Storage do Supabase e reduzir a lista.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co",
+  "img-src 'self' data: blob: https://*.supabase.co https:",
   "font-src 'self' data:",
   "connect-src 'self' https://*.supabase.co",
   "media-src 'self' blob:",
@@ -84,7 +87,7 @@ const nextConfig: NextConfig = {
             value: "camera=(self), microphone=(), geolocation=()",
           },
           {
-            key: "Content-Security-Policy-Report-Only",
+            key: "Content-Security-Policy",
             value: contentSecurityPolicy,
           },
         ],
