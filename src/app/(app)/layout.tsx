@@ -5,6 +5,7 @@ import { AcessoRestrito } from "@/components/auth/acesso-restrito";
 import { AppShell } from "@/components/app/shell";
 import { ShellCarregando } from "@/components/app/estados";
 import { obterPerfil, obterUsuario, usuarioEhAdmin } from "@/lib/auth/sessao";
+import { expirarConvitesNaVisita } from "@/lib/convites/expiracao";
 import { isSupabaseConfigured } from "@/lib/env";
 import { listarNotificacoes } from "@/lib/notificacoes/consultas";
 
@@ -27,6 +28,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
 async function SessaoApp({ children }: { children: ReactNode }) {
   await connection();
+  await expirarConvitesNaVisita();
 
   if (!isSupabaseConfigured) {
     return (

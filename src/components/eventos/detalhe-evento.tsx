@@ -34,6 +34,7 @@ import {
 } from "@/lib/format";
 import { buscarEventoPublicado } from "@/lib/eventos";
 import { contarFilaEspera, obterContextoEvento } from "@/lib/inscricoes/consultas";
+import { expirarConvitesNaVisita } from "@/lib/convites/expiracao";
 import { estiloTemaEvento, obterTemaEvento } from "@/lib/tema-evento";
 import type {
   Evento,
@@ -152,6 +153,7 @@ export async function DetalheEvento({
 }) {
   const { id } = await params;
   await connection();
+  await expirarConvitesNaVisita();
 
   const { evento, erro, demonstracao } = await buscarEventoPublicado(id);
 
