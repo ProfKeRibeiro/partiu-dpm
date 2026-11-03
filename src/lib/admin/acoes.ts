@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { usuarioEhAdmin } from "@/lib/auth/sessao";
+import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
 import { agendarAvisoInscricao } from "@/lib/email/disparo";
 import { agendarConvite, expirarConvitesEAvisar } from "@/lib/email/promocao";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -17,9 +17,9 @@ function texto(formData: FormData, campo: string) {
   return typeof valor === "string" ? valor.trim() : "";
 }
 
-async function garantirAdmin() {
-  const admin = await usuarioEhAdmin();
-  if (!admin) redirect("/entrar?next=/admin");
+async function garantirOrganizador() {
+  const pode = await usuarioPodeOrganizar();
+  if (!pode) redirect("/entrar?next=/admin");
 }
 
 function revalidar(eventoId: string) {
@@ -35,7 +35,7 @@ function revalidar(eventoId: string) {
 }
 
 export async function definirPresenca(formData: FormData) {
-  await garantirAdmin();
+  await garantirOrganizador();
 
   const inscricaoId = texto(formData, "inscricao_id");
   const eventoId = texto(formData, "evento_id");
@@ -57,7 +57,7 @@ export async function definirPresenca(formData: FormData) {
   });
 
   if (error) {
-    console.error("[partiu-dpm] Falha ao registrar presença.", error);
+    console.error("[partiu-dpm] Falha ao registrar presenÃ§a.", error);
   }
 
   const resultado = (data ?? {}) as { ok?: boolean };
@@ -75,7 +75,7 @@ export async function definirPresenca(formData: FormData) {
 }
 
 export async function emitirCertificado(formData: FormData) {
-  await garantirAdmin();
+  await garantirOrganizador();
 
   const inscricaoId = texto(formData, "inscricao_id");
   const eventoId = texto(formData, "evento_id");
@@ -105,11 +105,11 @@ export async function emitirCertificado(formData: FormData) {
 }
 
 /**
- * Reenvia o e-mail do certificado já emitido — útil quando o envio falhou ou a
+ * Reenvia o e-mail do certificado jÃ¡ emitido â€” Ãºtil quando o envio falhou ou a
  * pessoa perdeu a mensagem.
  */
 export async function reenviarAvisoCertificado(formData: FormData) {
-  await garantirAdmin();
+  await garantirOrganizador();
 
   const inscricaoId = texto(formData, "inscricao_id");
   const eventoId = texto(formData, "evento_id");
@@ -124,7 +124,7 @@ export async function reenviarAvisoCertificado(formData: FormData) {
 }
 
 export async function cancelarCertificado(formData: FormData) {
-  await garantirAdmin();
+  await garantirOrganizador();
 
   const inscricaoId = texto(formData, "inscricao_id");
   const eventoId = texto(formData, "evento_id");
@@ -144,7 +144,7 @@ export async function cancelarCertificado(formData: FormData) {
 }
 
 export async function definirStatusInscricao(formData: FormData) {
-  await garantirAdmin();
+  await garantirOrganizador();
 
   const inscricaoId = texto(formData, "inscricao_id");
   const eventoId = texto(formData, "evento_id");
@@ -174,7 +174,7 @@ export async function definirStatusInscricao(formData: FormData) {
   );
 
   if (error) {
-    console.error("[partiu-dpm] Falha ao alterar status da inscrição.", error);
+    console.error("[partiu-dpm] Falha ao alterar status da inscriÃ§Ã£o.", error);
   }
 
   const anteriorStatus = (anterior?.status as string | undefined) ?? null;

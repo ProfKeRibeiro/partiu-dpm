@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { obterUsuario, usuarioEhAdmin } from "@/lib/auth/sessao";
+import { obterUsuario, usuarioEhAdmin, usuarioPodeOrganizar } from "@/lib/auth/sessao";
 import { enviarImagemEventoParaStorage } from "@/lib/admin/imagem-evento";
 import { dataLocalParaIso } from "@/lib/data-local";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -297,8 +297,13 @@ export async function salvarEvento(
   _estado: EstadoEvento,
   formData: FormData,
 ): Promise<EstadoEvento> {
-  const admin = await usuarioEhAdmin();
-  if (!admin) redirect("/entrar?next=/admin");
+  const [podeOrganizar, admin, usuario] = await Promise.all([
+    usuarioPodeOrganizar(),
+    usuarioEhAdmin(),
+    obterUsuario(),
+  ]);
+
+  if (!podeOrganizar || !usuario) redirect("/entrar?next=/admin");
 
   const id = texto(formData, "evento_id");
   const editando = id.length > 0;
@@ -315,13 +320,21 @@ export async function salvarEvento(
   if (editando) {
     const { data: atual, error: erroConsulta } = await supabase
       .from("eventos")
-      .select("status")
+      .select("status, criado_por")
       .eq("id", id)
       .maybeSingle();
 
     if (erroConsulta) {
       console.error("[partiu-dpm] Falha ao consultar evento.", erroConsulta);
       return { erro: "Não foi possível carregar o evento. Tente novamente." };
+    }
+
+    if (!atual) {
+      return { erro: "Evento não encontrado." };
+    }
+
+    if (!admin && atual.criado_por !== usuario.id) {
+      return { erro: "Você só pode editar eventos que criou." };
     }
 
     if (atual?.status === "encerrado" && resultado.dados.status !== "encerrado") {
@@ -351,9 +364,6 @@ export async function salvarEvento(
     return { mensagem: "Evento atualizado com sucesso." };
   }
 
-  const usuario = await obterUsuario();
-  if (!usuario) redirect("/entrar?next=/admin");
-
   const { data, error } = await supabase
     .from("eventos")
     .insert({ ...resultado.dados, criado_por: usuario.id })
@@ -382,8 +392,8 @@ export async function enviarImagemEvento(
 ): Promise<EstadoImagemEvento> {
   const admin = await usuarioEhAdmin();
 
-  if (!admin) {
-    return { erro: "Sua conta não tem permissão de administrador." };
+  if (!admin && !(await usuarioPodeOrganizar())) {
+    return { erro: "Sua conta não tem permissão para enviar imagens." };
   }
 
   const arquivo = formData.get("arquivo");
@@ -403,8 +413,10 @@ export async function enviarImagemEvento(
   return { url: resultado.url };
 }
 
-export async function publicarEvento(formData: FormData) {  const admin = await usuarioEhAdmin();
-  if (!admin) redirect("/entrar?next=/admin");
+export async function publicarEvento(formData: FormData) {
+  const podeOrganizar = await usuarioPodeOrganizar();
+
+  if (!podeOrganizar) redirect("/entrar?next=/admin");
 
   const id = texto(formData, "evento_id");
   if (!REGEX_UUID.test(id)) {
@@ -426,16 +438,35 @@ export async function publicarEvento(formData: FormData) {  const admin = await 
 }
 
 export async function excluirEvento(formData: FormData) {
-  const admin = await usuarioEhAdmin();
-  if (!admin) redirect("/entrar?next=/admin");
+  const [podeOrganizar, admin, usuario] = await Promise.all([
+    usuarioPodeOrganizar(),
+    usuarioEhAdmin(),
+    obterUsuario(),
+  ]);
+
+  if (!podeOrganizar || !usuario) redirect("/entrar?next=/admin");
 
   const id = texto(formData, "evento_id");
   if (!REGEX_UUID.test(id)) redirect("/admin");
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("eventos").delete().eq("id", id);
+  const { data: alvo } = await supabase
+    .from("eventos")
+    .select("criado_por")
+    .eq("id", id)
+    .maybeSingle();
 
-  if (error) {
+  if (!alvo || (!admin && alvo.criado_por !== usuario.id)) {
+    redirect(`/admin/eventos/${id}?erro=excluir`);
+  }
+
+  const { error, data } = await supabase
+    .from("eventos")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error || !data?.length) {
     console.error("[partiu-dpm] Falha ao excluir evento.", error);
     redirect(`/admin/eventos/${id}?erro=excluir`);
   }

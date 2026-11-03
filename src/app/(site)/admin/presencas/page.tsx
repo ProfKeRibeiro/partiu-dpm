@@ -11,7 +11,7 @@ import {
   IconeUsuarios,
 } from "@/components/ui/icons";
 import { listarEventosAdmin } from "@/lib/admin/consultas";
-import { usuarioEhAdmin } from "@/lib/auth/sessao";
+import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
 import { isSupabaseConfigured } from "@/lib/env";
 import { formatarDataCurta, formatarHorario } from "@/lib/format";
 
@@ -41,7 +41,7 @@ export default async function PresencasAdminPage() {
     );
   }
 
-  if (!(await usuarioEhAdmin())) {
+  if (!(await usuarioPodeOrganizar())) {
     return <AcessoRestrito variante="admin" destinoLogin="/admin/presencas" />;
   }
 

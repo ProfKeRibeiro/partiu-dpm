@@ -13,7 +13,7 @@ import {
   IconeSetaDireita,
   IconeUsuarios,
 } from "@/components/ui/icons";
-import { usuarioEhAdmin } from "@/lib/auth/sessao";
+import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
 import { listarEventosAdmin } from "@/lib/admin/consultas";
 import { formatarDataCurta, formatarHorario } from "@/lib/format";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -61,7 +61,7 @@ export default async function AdminPage() {
     );
   }
 
-  if (!(await usuarioEhAdmin())) {
+  if (!(await usuarioPodeOrganizar())) {
     return <AcessoRestrito variante="admin" destinoLogin="/admin" />;
   }
 

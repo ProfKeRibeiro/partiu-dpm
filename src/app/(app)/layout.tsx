@@ -4,7 +4,11 @@ import { Suspense, type ReactNode } from "react";
 import { AcessoRestrito } from "@/components/auth/acesso-restrito";
 import { AppShell } from "@/components/app/shell";
 import { ShellCarregando } from "@/components/app/estados";
-import { obterPerfil, obterUsuario, usuarioEhAdmin } from "@/lib/auth/sessao";
+import {
+  obterPerfil,
+  obterUsuario,
+  usuarioPodeOrganizar,
+} from "@/lib/auth/sessao";
 import { expirarConvitesNaVisita } from "@/lib/convites/expiracao";
 import { isSupabaseConfigured } from "@/lib/env";
 import { listarNotificacoes } from "@/lib/notificacoes/consultas";
@@ -57,7 +61,7 @@ async function SessaoApp({ children }: { children: ReactNode }) {
 
   const [perfil, admin, notificacoes] = await Promise.all([
     obterPerfil(),
-    usuarioEhAdmin(),
+    usuarioPodeOrganizar(),
     listarNotificacoes(),
   ]);
 

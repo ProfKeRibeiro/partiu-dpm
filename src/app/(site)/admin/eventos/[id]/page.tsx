@@ -28,7 +28,7 @@ import {
   obterEventoAdmin,
   obterEventoParaEdicao,
 } from "@/lib/admin/consultas";
-import { usuarioEhAdmin } from "@/lib/auth/sessao";
+import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
 import { isSupabaseConfigured } from "@/lib/env";
 import { formatarDataCurta, formatarDataHora, formatarPeriodo } from "@/lib/format";
 
@@ -118,7 +118,7 @@ async function AdminEventoConteudo({
     );
   }
 
-  if (!(await usuarioEhAdmin())) {
+  if (!(await usuarioPodeOrganizar())) {
     return <AcessoRestrito variante="admin" destinoLogin="/admin" />;
   }
 

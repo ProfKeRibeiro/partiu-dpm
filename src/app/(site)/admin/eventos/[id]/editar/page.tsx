@@ -5,7 +5,7 @@ import { AcessoRestrito } from "@/components/auth/acesso-restrito";
 import { FormularioEvento } from "@/components/admin/formulario-evento";
 import { Container } from "@/components/ui/container";
 import { obterEventoParaEdicao } from "@/lib/admin/consultas";
-import { usuarioEhAdmin } from "@/lib/auth/sessao";
+import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export const metadata: Metadata = {
@@ -36,7 +36,7 @@ export default async function EditarEventoPage({
 
   const { id } = await params;
 
-  if (!(await usuarioEhAdmin())) {
+  if (!(await usuarioPodeOrganizar())) {
     return (
       <AcessoRestrito
         variante="admin"

@@ -19,7 +19,11 @@ import {
 } from "@/components/ui/icons";
 import { rotuloCategoria } from "@/lib/app-utils";
 import { sair } from "@/lib/auth/acoes";
-import { obterPerfil, obterUsuario, usuarioEhAdmin } from "@/lib/auth/sessao";
+import {
+  obterPerfil,
+  obterUsuario,
+  usuarioPodeOrganizar,
+} from "@/lib/auth/sessao";
 
 export const metadata: Metadata = {
   title: "Meu perfil",
@@ -56,7 +60,7 @@ async function Perfil() {
 
   const [perfil, admin] = await Promise.all([
     obterPerfil(),
-    usuarioEhAdmin(),
+    usuarioPodeOrganizar(),
   ]);
 
   const nome = perfil?.nome_completo ?? usuario.nome ?? "Participante";

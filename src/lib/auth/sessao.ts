@@ -104,3 +104,29 @@ export const usuarioEhAdmin = cacheReact(async (): Promise<boolean> => {
 
   return data === true;
 });
+
+const DOMINIO_ORGANIZADOR = "cps.sp.gov.br";
+
+/**
+ * Regra do papel "organizador", espelhando `public.pode_organizar()` no banco:
+ * e-mail com domínio exato `cps.sp.gov.br` (o que exclui
+ * `aluno.cps.sp.gov.br`). Admin também organiza.
+ */
+export function emailPodeOrganizar(email: string | null | undefined) {
+  if (typeof email !== "string") return false;
+
+  const limpo = email.trim().toLowerCase();
+  const separador = limpo.lastIndexOf("@");
+
+  if (separador <= 0 || separador === limpo.length - 1) return false;
+
+  return limpo.slice(separador + 1) === DOMINIO_ORGANIZADOR;
+}
+
+export const usuarioPodeOrganizar = cacheReact(async (): Promise<boolean> => {
+  if (await usuarioEhAdmin()) return true;
+
+  const usuario = await obterUsuario();
+
+  return emailPodeOrganizar(usuario?.email);
+});

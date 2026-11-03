@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { AcessoRestrito } from "@/components/auth/acesso-restrito";
 import { FormularioEvento } from "@/components/admin/formulario-evento";
 import { Container } from "@/components/ui/container";
-import { usuarioEhAdmin } from "@/lib/auth/sessao";
+import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Cadastrar evento", robots: { index: false, follow: false } };
@@ -16,7 +16,7 @@ export default async function NovoEventoPage() {
   if (!isSupabaseConfigured) {
     return <main className="flex-1 bg-canvas py-20"><Container><p className="rounded-2xl border border-ember-400/40 bg-ember-50 p-6 text-sm text-molten">Configure o Supabase para cadastrar eventos.</p></Container></main>;
   }
-  if (!(await usuarioEhAdmin())) return <AcessoRestrito variante="admin" destinoLogin="/admin/eventos/novo" />;
+  if (!(await usuarioPodeOrganizar())) return <AcessoRestrito variante="admin" destinoLogin="/admin/eventos/novo" />;
 
   return (
     <main className="flex-1 bg-canvas py-10 sm:py-14">

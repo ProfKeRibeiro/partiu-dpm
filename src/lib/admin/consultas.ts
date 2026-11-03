@@ -1,5 +1,6 @@
 import "server-only";
 
+import { obterUsuario, usuarioEhAdmin } from "@/lib/auth/sessao";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   PUBLICOS_ALVO,
@@ -116,13 +117,24 @@ export async function listarConvocacoesAdmin(
 }
 
 export async function listarEventosAdmin(): Promise<EventoAdmin[]> {
+  const usuario = await obterUsuario();
+
+  if (!usuario) return [];
+
+  const admin = await usuarioEhAdmin();
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
+  let consulta = supabase
     .from("eventos")
     .select(
       "id, titulo, status, data_inicio, data_fim, modalidade, limite_vagas, inscritos",
     )
     .order("data_inicio", { ascending: false });
+
+  if (!admin) {
+    consulta = consulta.eq("criado_por", usuario.id);
+  }
+
+  const { data, error } = await consulta;
 
   if (error) {
     console.error("[partiu-dpm] Falha ao listar eventos no admin.", error);
@@ -144,16 +156,23 @@ export async function listarEventosAdmin(): Promise<EventoAdmin[]> {
 export async function obterEventoAdmin(
   id: string,
 ): Promise<EventoAdmin | null> {
+  const usuario = await obterUsuario();
+
+  if (!usuario) return null;
+
+  const admin = await usuarioEhAdmin();
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("eventos")
     .select(
-      "id, titulo, status, data_inicio, data_fim, modalidade, limite_vagas, inscritos",
+      "id, titulo, status, data_inicio, data_fim, modalidade, limite_vagas, inscritos, criado_por",
     )
     .eq("id", id)
     .maybeSingle();
 
   if (error || !data) return null;
+
+  if (!admin && data.criado_por !== usuario.id) return null;
 
   return {
     id: data.id as string,
