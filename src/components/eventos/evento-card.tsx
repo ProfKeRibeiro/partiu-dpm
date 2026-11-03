@@ -7,8 +7,11 @@ import {
   textoVagas,
 } from "@/lib/evento-utils";
 import { formatarPeriodo, partesDaData } from "@/lib/format";
+import { siteUrl } from "@/lib/env";
 import type { Evento, Modalidade } from "@/types/evento";
 import { SeloModalidade, SeloStatus } from "@/components/eventos/selos";
+import { MenuDoEvento } from "@/components/eventos/menu-evento";
+import { mensagemDoEvento } from "@/components/eventos/compartilhar-utils";
 import {
   IconeBilhete,
   IconeCalendario,
@@ -38,11 +41,17 @@ export function EventoCard({
     evento.modalidade === "online"
       ? (evento.local ?? "Online")
       : (evento.local ?? "Local a confirmar");
+  const mensagem = mensagemDoEvento({
+    titulo: evento.titulo,
+    periodo: formatarPeriodo(evento.inicio, evento.fim),
+    local: localExibido,
+    prefixo: realizado ? "Confira o evento" : "Participe do evento",
+  });
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-deep/10 bg-white shadow-sm transition duration-200 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brick hover:-translate-y-0.5 hover:border-deep/20 hover:shadow-suave">
+    <article className="group relative flex h-full flex-col rounded-2xl border border-deep/10 bg-white shadow-sm transition duration-200 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brick hover:-translate-y-0.5 hover:border-deep/20 hover:shadow-suave">
       <div
-        className={`relative aspect-[16/10] overflow-hidden bg-gradient-to-br ${gradientes[evento.modalidade]}`}
+        className={`relative aspect-[16/10] overflow-hidden rounded-t-2xl bg-gradient-to-br ${gradientes[evento.modalidade]}`}
       >
         {evento.imagemUrl ? (
           <>
@@ -65,7 +74,7 @@ export function EventoCard({
           </>
         )}
 
-        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-4">
+        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-4 pr-14">
           <SeloStatus
             situacao={situacao}
             realizado={realizado}
@@ -74,6 +83,14 @@ export function EventoCard({
           <SeloModalidade modalidade={evento.modalidade} />
         </div>
       </div>
+
+      <MenuDoEvento
+        titulo={evento.titulo}
+        mensagem={mensagem}
+        caminho={`/eventos/${evento.id}`}
+        urlInicial={`${siteUrl}/eventos/${evento.id}`}
+        className="right-3 top-3"
+      />
 
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="flex items-start gap-4">

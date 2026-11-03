@@ -6,6 +6,11 @@ import {
   IconeInstagram,
   IconeWhatsApp,
 } from "@/components/ui/icons";
+import {
+  textoCompartilhavel,
+  urlFacebook,
+  urlWhatsApp,
+} from "@/components/eventos/compartilhar-utils";
 
 const BOTAO =
   "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-deep/20 bg-white px-4 text-sm font-semibold text-deep transition-colors hover:border-deep/35 hover:bg-papaya/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick motion-reduce:transition-none";
@@ -57,13 +62,8 @@ export function CompartilharEvento({
   }
 
   function textoCompleto() {
-    return `${mensagem} Inscreva-se: ${urlAtual()}`;
+    return textoCompartilhavel(mensagem, urlAtual());
   }
-
-  /* Versão estável para o href: usa sempre a URL do servidor, para o HTML
-   * renderizado no servidor e a primeira renderização no cliente serem iguais
-   * (sem aviso de hidratação). O clique recalcula com a origem real. */
-  const textoEstavel = `${mensagem} Inscreva-se: ${urlInicial}`;
 
   function abrirComUrl(url: string) {
     return (evento: MouseEvent<HTMLAnchorElement>) => {
@@ -125,28 +125,24 @@ export function CompartilharEvento({
         className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap"
       >
         <a
-          href={`https://wa.me/?text=${encodeURIComponent(textoEstavel)}`}
+          href={urlWhatsApp(mensagem, urlInicial)}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Compartilhar no WhatsApp (abre em nova aba)"
           className={BOTAO}
-          onClick={abrirComUrl(
-            `https://wa.me/?text=${encodeURIComponent(textoCompleto())}`,
-          )}
+          onClick={abrirComUrl(urlWhatsApp(mensagem, urlAtual()))}
         >
           <IconeWhatsApp className="h-4 w-4 text-[#128c7e]" />
           WhatsApp
         </a>
 
         <a
-          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(urlInicial)}&quote=${encodeURIComponent(textoEstavel)}`}
+          href={urlFacebook(mensagem, urlInicial)}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Compartilhar no Facebook (abre em nova aba)"
           className={BOTAO}
-          onClick={abrirComUrl(
-            `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(urlAtual())}&quote=${encodeURIComponent(textoCompleto())}`,
-          )}
+          onClick={abrirComUrl(urlFacebook(mensagem, urlAtual()))}
         >
           <IconeFacebook className="h-4 w-4 text-[#1877f2]" />
           Facebook

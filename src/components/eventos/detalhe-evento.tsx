@@ -35,6 +35,7 @@ import {
 } from "@/lib/format";
 import { buscarEventoPublicado } from "@/lib/eventos";
 import { siteUrl } from "@/lib/env";
+import { mensagemDoEvento } from "@/components/eventos/compartilhar-utils";
 import { contarFilaEspera, obterContextoEvento } from "@/lib/inscricoes/consultas";
 import { expirarConvitesNaVisita } from "@/lib/convites/expiracao";
 import { estiloTemaEvento, obterTemaEvento } from "@/lib/tema-evento";
@@ -192,7 +193,12 @@ export async function DetalheEvento({
         ? "Também haverá transmissão online para inscritos."
         : null;
   const tema = obterTemaEvento(evento.corTema);
-  const mensagemCompartilhar = `${realizado ? "Confira o evento" : "Participe do evento"} ${evento.titulo} na Etec DPM! ${formatarPeriodo(evento.inicio, evento.fim)} · ${localPrincipal}.`;
+  const mensagemCompartilhar = mensagemDoEvento({
+    titulo: evento.titulo,
+    periodo: formatarPeriodo(evento.inicio, evento.fim),
+    local: localPrincipal,
+    prefixo: realizado ? "Confira o evento" : "Participe do evento",
+  });
 
   return (
     <div className="tema-evento" style={estiloTemaEvento(tema) as CSSProperties}>

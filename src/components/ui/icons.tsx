@@ -10,6 +10,8 @@ import {
   Check,
   ClipboardList,
   Clock,
+  Copy,
+  EllipsisVertical,
   Globe,
   GraduationCap,
   House,
@@ -80,6 +82,11 @@ export const IconeQr = criarIcone(QrCode, "IconeQr");
 export const IconeCamera = criarIcone(Camera, "IconeCamera");
 export const IconeMais = criarIcone(Plus, "IconeMais");
 export const IconeAtualizar = criarIcone(RefreshCw, "IconeAtualizar");
+export const IconeMaisOpcoes = criarIcone(
+  EllipsisVertical,
+  "IconeMaisOpcoes",
+);
+export const IconeCopiar = criarIcone(Copy, "IconeCopiar");
 export const IconeLixeira = criarIcone(Trash2, "IconeLixeira");
 
 /*
