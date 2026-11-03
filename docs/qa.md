@@ -51,9 +51,7 @@ Executado no repositório local e no projeto Supabase de produção:
 
 Variáveis de ambiente: as chaves de servidor (`CRON_SECRET`,
 `SUPABASE_SERVICE_ROLE_KEY`, `BREVO_API_KEY`, `EMAIL_REMETENTE`,
-`EMAIL_REMETENTE_NOME`) existem em **Production**. O ambiente **Preview** não as
-tem: para validar convites e e-mail em preview é preciso cadastrá-las lá
-(`vercel env add ... preview`).
+`EMAIL_REMETENTE_NOME`) estão cadastradas em **Production** e em **Preview**.
 
 ## Limitações conhecidas
 

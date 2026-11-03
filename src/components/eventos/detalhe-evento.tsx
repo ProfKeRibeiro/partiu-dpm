@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import type { CSSProperties, ReactNode } from "react";
 import { AcoesInscricao } from "@/components/eventos/acoes-inscricao";
+import { CompartilharEvento } from "@/components/eventos/compartilhar-evento";
 import { SeloModalidade, SeloStatus } from "@/components/eventos/selos";
 import { AvisoPrevia } from "@/components/ui/aviso-previa";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -33,6 +34,7 @@ import {
   formatarPeriodoInscricoes,
 } from "@/lib/format";
 import { buscarEventoPublicado } from "@/lib/eventos";
+import { siteUrl } from "@/lib/env";
 import { contarFilaEspera, obterContextoEvento } from "@/lib/inscricoes/consultas";
 import { expirarConvitesNaVisita } from "@/lib/convites/expiracao";
 import { estiloTemaEvento, obterTemaEvento } from "@/lib/tema-evento";
@@ -190,6 +192,7 @@ export async function DetalheEvento({
         ? "Também haverá transmissão online para inscritos."
         : null;
   const tema = obterTemaEvento(evento.corTema);
+  const mensagemCompartilhar = `Participe do evento ${evento.titulo} na Etec DPM! ${formatarPeriodo(evento.inicio, evento.fim)} · ${localPrincipal}.`;
 
   return (
     <div className="tema-evento" style={estiloTemaEvento(tema) as CSSProperties}>
@@ -246,6 +249,14 @@ export async function DetalheEvento({
               {localPrincipal}
             </span>
           </div>
+
+          <CompartilharEvento
+            titulo={evento.titulo}
+            mensagem={mensagemCompartilhar}
+            caminho={`/eventos/${evento.id}`}
+            urlInicial={`${siteUrl}/eventos/${evento.id}`}
+            className="mt-7 max-w-xl"
+          />
         </Container>
       </header>
 
