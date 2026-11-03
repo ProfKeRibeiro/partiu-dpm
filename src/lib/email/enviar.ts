@@ -20,9 +20,33 @@ export type ResultadoEnvio =
  * ignorado com um aviso no log — a inscrição nunca falha por causa do e-mail.
  */
 export function emailConfigurado() {
-  return Boolean(
-    process.env.BREVO_API_KEY?.trim() || process.env.RESEND_API_KEY?.trim(),
-  );
+  return Boolean(chaveBrevo() || process.env.RESEND_API_KEY?.trim());
+}
+
+/**
+ * Aceita tanto a API key crua (`xkeysib-...`) quanto o token do MCP do Brevo,
+ * que é um JSON em base64 (`{"api_key":"xkeysib-..."}`).
+ */
+function chaveBrevo() {
+  const bruta = process.env.BREVO_API_KEY?.trim();
+
+  if (!bruta) return null;
+
+  if (bruta.startsWith("eyJ")) {
+    try {
+      const dados = JSON.parse(
+        Buffer.from(bruta, "base64").toString("utf8"),
+      ) as { api_key?: unknown };
+
+      if (typeof dados.api_key === "string" && dados.api_key.trim()) {
+        return dados.api_key.trim();
+      }
+    } catch {
+      // Não era base64: segue com o valor original.
+    }
+  }
+
+  return bruta;
 }
 
 function remetente() {
@@ -40,7 +64,7 @@ export async function enviarEmail(
   mensagem: MensagemEmail,
 ): Promise<ResultadoEnvio> {
   const de = remetente();
-  const brevo = process.env.BREVO_API_KEY?.trim();
+  const brevo = chaveBrevo();
   const resend = process.env.RESEND_API_KEY?.trim();
 
   if (!de || (!brevo && !resend)) {
