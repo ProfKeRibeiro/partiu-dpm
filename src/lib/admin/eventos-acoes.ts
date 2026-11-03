@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { obterUsuario, usuarioEhAdmin } from "@/lib/auth/sessao";
+import { enviarImagemEventoParaStorage } from "@/lib/admin/imagem-evento";
 import { dataLocalParaIso } from "@/lib/data-local";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { temaEventoValido } from "@/lib/tema-evento";
@@ -368,8 +369,41 @@ export async function salvarEvento(
   redirect(`/admin/eventos/${data.id}`);
 }
 
-export async function publicarEvento(formData: FormData) {
+export type EstadoImagemEvento = { url: string } | { erro: string } | null;
+
+/**
+ * Recebe a arte do evento pelo formulário, valida e sobe para o bucket público
+ * `eventos`. Devolve a URL pública para o formulário gravar em
+ * `eventos.imagem_url` ao salvar o evento. O campo de URL manual continua
+ * valendo para eventos antigos.
+ */
+export async function enviarImagemEvento(
+  formData: FormData,
+): Promise<EstadoImagemEvento> {
   const admin = await usuarioEhAdmin();
+
+  if (!admin) {
+    return { erro: "Sua conta não tem permissão de administrador." };
+  }
+
+  const arquivo = formData.get("arquivo");
+
+  if (!(arquivo instanceof File)) {
+    return { erro: "Selecione uma imagem JPG, PNG ou WebP." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const resultado = await enviarImagemEventoParaStorage(supabase, arquivo);
+
+  if (!resultado.ok) return { erro: resultado.erro };
+
+  revalidatePath("/admin");
+  revalidatePath("/eventos");
+
+  return { url: resultado.url };
+}
+
+export async function publicarEvento(formData: FormData) {  const admin = await usuarioEhAdmin();
   if (!admin) redirect("/entrar?next=/admin");
 
   const id = texto(formData, "evento_id");

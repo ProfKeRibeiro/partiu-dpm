@@ -32,19 +32,17 @@ if (supabaseUrl) {
 }
 
 /**
- * CSP bloqueante.
+ * CSP bloqueante. O nonce por requisição não pôde ser adotado porque as
+ * páginas com PPR/pré-renderização são geradas no build, antes de existir o
+ * nonce; os scripts do shell estático ficam sem nonce e são bloqueados.
+ * Ver docs/csp.md para o teste e a decisão.
  *
- * `'unsafe-inline'` é necessário para os scripts de bootstrap do Next e para
- * os estilos do Tailwind; a evolução é usar nonce e remover essa exceção.
- *
- * `https:` está liberado em `img-src` porque a imagem do evento é cadastrada
- * pelo painel com URL livre (o "MongoDB Day" usa uma miniatura externa). Imagem
- * não executa script, então o risco fica contido; o ideal é migrar as imagens
- * para o Storage do Supabase e reduzir a lista.
+ * `'unsafe-inline'` é necessário para os scripts de bootstrap do Next; os
+ * estilos também usam `'unsafe-inline'` (Tailwind/Next). Em desenvolvimento o
+ * React usa `eval()`.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
-  /* O React em desenvolvimento usa eval() para depuração; produção não. */
   process.env.NODE_ENV === "production"
     ? "script-src 'self' 'unsafe-inline'"
     : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",

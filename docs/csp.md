@@ -3,6 +3,12 @@
 **Status:** bloqueante desde 03/11/2026 (antes era `Report-Only`).
 **Arquivo:** `next.config.ts`.
 
+> **Nonce testado e descartado em 03/11/2026.** O nonce por requisição
+> funciona nas rotas dinâmicas, mas não nas páginas com PPR/pré-renderização:
+> o shell estático é gerado no build, sem o nonce da requisição, e seus scripts
+> são bloqueados. Evidência e decisão na seção
+> [Tentativa de nonce](#tentativa-de-nonce-03112026).
+
 ## Política final
 
 ```text
@@ -24,7 +30,7 @@ form-action 'self'
 
 | Diretiva | Motivo |
 | --- | --- |
-| `script-src 'unsafe-inline'` | O Next injeta scripts de bootstrap inline. Sem isso, a hidratação quebra. A evolução é usar nonce e remover a exceção. |
+| `script-src 'unsafe-inline'` | O Next injeta scripts de bootstrap inline e o shell estático (PPR) não recebe nonce. Sem isso, a hidratação quebra. Ver a tentativa de nonce abaixo. |
 | `style-src 'unsafe-inline'` | Tailwind/Next geram estilos inline no HTML. |
 | `img-src data: blob:` | Logos/ícones embutidos e pré-visualizações locais. |
 | `img-src https://*.supabase.co` | Fotos de perfil e imagens no Storage. |
@@ -33,6 +39,36 @@ form-action 'self'
 | `media-src blob:` / `worker-src blob:` | Leitor de QR (`getUserMedia` + canvas/jsQR). |
 | `object-src 'none'`, `base-uri 'self'` | Bloqueia plugins e sequestro de URLs relativas. |
 | `frame-ancestors 'self'` | Equivale ao `X-Frame-Options: SAMEORIGIN` já enviado. |
+
+## Tentativa de nonce (03/11/2026)
+
+Foi implementado nonce por requisição no `src/proxy.ts`, com
+`script-src 'self' 'nonce-<valor>' 'strict-dynamic'`, header de requisição e de
+resposta, e removido o CSP estático do `next.config.ts`.
+
+Resultado com build de produção e Edge headless:
+
+| Rota | Tipo de render | Scripts com nonce | Violações |
+| --- | --- | --- | --- |
+| `/entrar` | dinâmica | 17 de 17 | 0 |
+| `/entrar?modo=criar` | dinâmica | 17 de 17 | 0 |
+| `/conta` (redirect) | dinâmica | 17 de 17 | 0 |
+| `/admin` (redirect) | dinâmica | 17 de 17 | 0 |
+| `/` | PPR/estática | 8 de 20 | 12 |
+| `/eventos` | PPR/estática | 9 de 21 | 12 |
+| `/eventos/[id]` | PPR/estática | 12 de 25 | 13 |
+| `/certificados` | PPR/estática | 5 de 19 | 14 |
+| `/certificados/[codigo]` | PPR/estática | 11 de 24 | 13 |
+
+O nonce mudava a cada requisição e o header não tinha `'unsafe-inline'`.
+Ainda assim, o HTML pré-renderizado no build contém scripts sem nonce. Com
+`'strict-dynamic'`, o navegador ignora a allowlist de host e bloqueia também os
+chunks externos `_next/static/chunks/*.js`.
+
+**Decisão:** não forçar. Para usar nonce sem violação seria necessário tornar
+as páginas dinâmicas (por exemplo, desligar `cacheComponents`/PPR ou usar
+`connection()` em todas as rotas), com custo de performance. O estado mantido é
+a CSP bloqueante com `'unsafe-inline'` apenas em `script-src`.
 
 ## Testes executados (build de produção local)
 
@@ -75,5 +111,5 @@ Se algo quebrar em produção, trocar a chave do header de `Content-Security-Pol
 ## Evolução recomendada
 
 1. Migrar as imagens de evento para o Storage e remover `https:` de `img-src`.
-2. Adotar nonce para scripts (Next 16 permite via proxy) e remover `'unsafe-inline'` de `script-src`.
+2. Reavaliar nonce somente se as rotas deixarem de usar PPR/pré-renderização estática. Hoje o nonce quebra o shell estático (ver seção acima).
 3. Adicionar `report-uri`/`report-to` para coletar violações em produção.

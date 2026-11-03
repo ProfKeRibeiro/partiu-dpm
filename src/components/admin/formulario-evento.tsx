@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { IconeCalendario, IconeCheck, IconeSetaDireita } from "@/components/ui/icons";
 import { AvisoFormulario } from "@/components/ui/aviso-formulario";
+import { ImagemDoEvento } from "@/components/admin/imagem-evento";
 import type { PublicoAlvo } from "@/types/evento";
 import {
   salvarEvento,
@@ -285,17 +286,10 @@ export function FormularioEvento({
               ))}
             </select>
           </label>
-          <label>
-            <span className={label}>Imagem de capa (URL)</span>
-            <input
-              type="url"
-              name="imagem_url"
-              maxLength={500}
-              defaultValue={valoresIniciais?.imagemUrl ?? ""}
-              className={input}
-              placeholder="https://..."
-            />
-          </label>
+          <ImagemDoEvento
+            valorInicial={valoresIniciais?.imagemUrl ?? null}
+            className="sm:col-span-2"
+          />
           <fieldset>
             <legend className={label}>Cursos permitidos</legend>
             <p className="mt-1 text-xs leading-relaxed text-muted">
