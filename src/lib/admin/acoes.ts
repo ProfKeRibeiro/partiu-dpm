@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { usuarioEhAdmin } from "@/lib/auth/sessao";
 import { agendarAvisoInscricao } from "@/lib/email/disparo";
+import { agendarAvisoPromovido } from "@/lib/email/promocao";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const REGEX_UUID =
@@ -162,10 +163,13 @@ export async function definirStatusInscricao(formData: FormData) {
     .eq("id", inscricaoId)
     .maybeSingle();
 
-  const { error } = await supabase.rpc("admin_definir_status_inscricao", {
-    p_inscricao_id: inscricaoId,
-    p_status: status,
-  });
+  const { data: mudanca, error } = await supabase.rpc(
+    "admin_definir_status_inscricao",
+    {
+      p_inscricao_id: inscricaoId,
+      p_status: status,
+    },
+  );
 
   if (error) {
     console.error("[partiu-dpm] Falha ao alterar status da inscrição.", error);
@@ -181,6 +185,19 @@ export async function definirStatusInscricao(formData: FormData) {
 
   if (!error && anteriorStatus !== status) {
     await agendarAvisoInscricao(supabase, inscricaoId, aviso);
+  }
+
+  const resultadoMudanca = (mudanca ?? {}) as {
+    promovido?: boolean;
+    promovido_inscricao_id?: string | null;
+  };
+
+  if (
+    !error &&
+    resultadoMudanca.promovido === true &&
+    resultadoMudanca.promovido_inscricao_id
+  ) {
+    await agendarAvisoPromovido(resultadoMudanca.promovido_inscricao_id);
   }
 
   revalidar(eventoId);

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useActionState } from "react";
 import { IconeCheck, IconeSetaDiagonal } from "@/components/ui/icons";
 import {
@@ -19,6 +20,7 @@ export function AcoesInscricao({
   linkAcesso,
   eventoIniciado,
   destinoLogin,
+  filaEspera = 0,
 }: {
   eventoId: string;
   situacao: "aberta" | "em-breve" | "encerrada" | "lotado";
@@ -27,6 +29,7 @@ export function AcoesInscricao({
   linkAcesso: string | null;
   eventoIniciado: boolean;
   destinoLogin: string;
+  filaEspera?: number;
 }) {
   const [estadoInscricao, acaoInscrever, inscrevendo] = useActionState<
     EstadoInscricao,
@@ -36,6 +39,19 @@ export function AcoesInscricao({
     EstadoInscricao,
     FormData
   >(cancelarInscricao, null);
+  const [modalCancelamento, setModalCancelamento] = useState(false);
+  const formCancelar = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (!modalCancelamento) return;
+
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key === "Escape") setModalCancelamento(false);
+    };
+
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [modalCancelamento]);
 
   const confirmada = inscricao?.status === "confirmada";
   const mensagem = estadoInscricao ?? estadoCancelamento;
@@ -90,17 +106,75 @@ export function AcoesInscricao({
         ) : null}
 
         {!eventoIniciado ? (
-          <form action={acaoCancelar}>
-            <input type="hidden" name="inscricao_id" value={inscricao.id} />
-            <input type="hidden" name="evento_id" value={eventoId} />
-            <button
-              type="submit"
-              disabled={cancelando}
-              className="inline-flex h-10 w-full items-center justify-center rounded-full border border-brick/40 px-4 text-xs font-semibold text-brick transition-colors hover:bg-ember-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {cancelando ? "Cancelando..." : "Cancelar inscrição"}
-            </button>
-          </form>
+          <>
+            <form ref={formCancelar} action={acaoCancelar}>
+              <input type="hidden" name="inscricao_id" value={inscricao.id} />
+              <input type="hidden" name="evento_id" value={eventoId} />
+              <button
+                type="button"
+                disabled={cancelando}
+                onClick={() =>
+                  filaEspera > 0
+                    ? setModalCancelamento(true)
+                    : formCancelar.current?.requestSubmit()
+                }
+                className="inline-flex h-10 w-full items-center justify-center rounded-full border border-brick/40 px-4 text-xs font-semibold text-brick transition-colors hover:bg-ember-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {cancelando ? "Cancelando..." : "Cancelar inscrição"}
+              </button>
+            </form>
+
+            {modalCancelamento ? (
+              <div
+                className="fixed inset-0 z-50 flex items-end justify-center bg-deep/50 p-4 sm:items-center"
+                role="presentation"
+                onClick={() => setModalCancelamento(false)}
+              >
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="titulo-cancelar-inscricao"
+                  aria-describedby="texto-cancelar-inscricao"
+                  className="w-full max-w-sm rounded-2xl border border-deep/10 bg-white p-5 text-left shadow-xl"
+                  onClick={(evento) => evento.stopPropagation()}
+                >
+                  <h2
+                    id="titulo-cancelar-inscricao"
+                    className="font-display text-lg font-semibold tracking-tight text-deep"
+                  >
+                    Cancelar sua inscrição?
+                  </h2>
+                  <p
+                    id="texto-cancelar-inscricao"
+                    className="mt-2 text-sm leading-relaxed text-muted"
+                  >
+                    Este evento está com lista de espera. Ao confirmar, sua vaga
+                    vai automaticamente para a próxima pessoa da fila, que será
+                    inscrita e avisada por e-mail e pelo sino do portal.
+                  </p>
+                  <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setModalCancelamento(false)}
+                      className="inline-flex h-10 items-center justify-center rounded-full border border-deep/20 px-4 text-xs font-semibold text-deep transition-colors hover:bg-papaya focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalCancelamento(false);
+                        formCancelar.current?.requestSubmit();
+                      }}
+                      className="inline-flex h-10 items-center justify-center rounded-full bg-brick px-4 text-xs font-semibold text-white transition-colors hover:bg-molten focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+                    >
+                      Sim, cancelar inscrição
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </>
         ) : null}
 
         {mensagem ? (

@@ -154,6 +154,23 @@ export const listarMinhasInscricoes = cache(
   },
 );
 
+/** Quantas pessoas aguardam vaga neste evento. */
+export const contarFilaEspera = cache(async (eventoId: string) => {
+  if (!isSupabaseConfigured) return 0;
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("contar_lista_espera", {
+    p_evento_id: eventoId,
+  });
+
+  if (error) {
+    console.error("[partiu-dpm] Falha ao contar a lista de espera.", error);
+    return 0;
+  }
+
+  return typeof data === "number" ? data : 0;
+});
+
 export async function obterContextoEvento(
   eventoId: string,
 ): Promise<ContextoEvento> {

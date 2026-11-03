@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { emailConfigurado } from "@/lib/email/enviar";
 import { enviarAvisoEvento, type AvisoTipo } from "@/lib/email/avisos";
+import { agendarAvisoPromovido } from "@/lib/email/promocao";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const REGEX_UUID =
@@ -244,7 +245,12 @@ export async function cancelarInscricao(
     };
   }
 
-  const resultado = (data ?? {}) as { ok?: boolean; codigo?: string };
+  const resultado = (data ?? {}) as {
+    ok?: boolean;
+    codigo?: string;
+    promovido?: boolean;
+    promovido_inscricao_id?: string | null;
+  };
   const codigo = resultado.codigo ?? "erro";
 
   if (resultado.ok === true && codigo === "cancelada") {
@@ -267,6 +273,10 @@ export async function cancelarInscricao(
       eventoDaInscricao,
       userData.user,
     );
+
+    if (resultado.promovido === true && resultado.promovido_inscricao_id) {
+      await agendarAvisoPromovido(resultado.promovido_inscricao_id);
+    }
   }
 
   revalidar(eventoId);

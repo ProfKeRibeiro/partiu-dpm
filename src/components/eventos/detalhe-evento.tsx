@@ -33,7 +33,7 @@ import {
   formatarPeriodoInscricoes,
 } from "@/lib/format";
 import { buscarEventoPublicado } from "@/lib/eventos";
-import { obterContextoEvento } from "@/lib/inscricoes/consultas";
+import { contarFilaEspera, obterContextoEvento } from "@/lib/inscricoes/consultas";
 import { estiloTemaEvento, obterTemaEvento } from "@/lib/tema-evento";
 import type {
   Evento,
@@ -159,6 +159,7 @@ export async function DetalheEvento({
   if (!evento) notFound();
 
   const contexto = await obterContextoEvento(evento.id);
+  const filaEspera = await contarFilaEspera(evento.id);
   const agora = new Date();
   const situacao = situacaoInscricao(evento, agora);
   const realizado = eventoRealizado(evento, agora);
@@ -453,6 +454,7 @@ export async function DetalheEvento({
                         inscricao={contexto.inscricao}
                         linkAcesso={contexto.linkAcesso}
                         eventoIniciado={eventoIniciado}
+                        filaEspera={filaEspera}
                         destinoLogin={`/eventos/${evento.id}`}
                       />
                     ) : (
