@@ -5,26 +5,22 @@ import { useEffect } from "react";
 /**
  * Tradutor de Libras oficial do governo (VLibras).
  *
+ * O loader é servido pelo próprio portal (`/vlibras/vlibras-plugin.js`, versão
+ * 7.12.2, ver README na pasta) para não depender de vlibras.gov.br nem de CDN
+ * no carregamento da página. O widget em si continua buscando o aplicativo e
+ * os avatares em vlibras.gov.br depois que a pessoa abre o tradutor.
+ *
  * O widget é montado no cliente, depois da hidratação, para não interferir no
- * HTML renderizado no servidor. O script e os assets vêm de vlibras.gov.br e
- * estão liberados no Content-Security-Policy do projeto.
+ * HTML renderizado no servidor.
  */
 export function Vlibras() {
   useEffect(() => {
-    if (document.querySelector("[vw]")) return;
-
-    const container = document.createElement("div");
-    container.setAttribute("vw", "true");
-    container.className = "enabled";
-    container.innerHTML = [
-      '<div vw-access-button class="active"></div>',
-      '<div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>',
-    ].join("");
-    document.body.appendChild(container);
+    if (document.querySelector("script[data-vlibras]")) return;
 
     const script = document.createElement("script");
-    script.src = "https://vlibras.gov.br/app/vlibras-plugin.js";
+    script.src = "/vlibras/vlibras-plugin.js";
     script.async = true;
+    script.dataset.vlibras = "true";
     script.onload = () => {
       const global = window as unknown as {
         VLibras?: { Widget: new (url: string) => unknown };
