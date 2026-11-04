@@ -131,12 +131,18 @@ export async function inscreverAlunoEscola(formData: FormData) {
     ok?: boolean;
     motivo?: string;
     token?: string;
+    autorizado?: boolean;
+    interno?: boolean;
     email_responsavel?: string;
   };
 
   if (resultado.ok !== true || !resultado.token) {
     const motivo = resultado.motivo ?? "erro";
     redirect(`/escolas/${encodeURIComponent(codigo)}?erro=${motivo}`);
+  }
+
+  if (resultado.autorizado === true) {
+    redirect(`/escolas/${encodeURIComponent(codigo)}?aluno=autorizado`);
   }
 
   const { data: consulta } = await supabase.rpc(

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
-import { enviarEmailConsentimentoMenor } from "@/lib/consentimentos/emails";
+import { enviarEmailConsentimentoMenor, enviarEmailReaceiteTermos } from "@/lib/consentimentos/emails";
 import { dadosDaRequisicao } from "@/lib/consentimentos/requisicao";
 import { VERSAO_TERMOS } from "@/lib/consentimentos/termos";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
@@ -16,6 +16,70 @@ export type EstadoConsentimento = {
   ok: boolean;
   mensagem: string;
 } | null;
+
+/**
+ * Campanha de re-aceite dos termos (admin).
+ *
+ * A RPC cria a notificação no sino e a linha de controle por usuário/versão de
+ * forma idempotente; a action envia o e-mail apenas para os usuários retornados
+ * na primeira execução. Rodar de novo não repete nem notificação nem e-mail.
+ */
+export async function campanhaReaceiteTermos(): Promise<EstadoConsentimento> {
+  const supabase = await createSupabaseServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+
+  if (!userData.user) {
+    return { ok: false, mensagem: mensagem("nao_autenticado") };
+  }
+
+  const { data, error } = await supabase.rpc("admin_campanha_reaceite_termos", {
+    p_versao: VERSAO_TERMOS,
+  });
+
+  if (error) {
+    console.error("[partiu-dpm] Falha na campanha de re-aceite.", error);
+    return {
+      ok: false,
+      mensagem:
+        error.code === "42501"
+          ? "Apenas administradores podem disparar a campanha."
+          : mensagem(undefined),
+    };
+  }
+
+  const resultado = (data ?? {}) as {
+    ok?: boolean;
+    motivo?: string;
+    novos?: number;
+    usuarios?: Array<{ usuario_id?: string; nome?: string; email?: string }>;
+  };
+
+  if (resultado.ok !== true) {
+    return { ok: false, mensagem: mensagem(resultado.motivo) };
+  }
+
+  let enviados = 0;
+
+  for (const usuario of resultado.usuarios ?? []) {
+    if (!usuario.email) continue;
+
+    await enviarEmailReaceiteTermos({
+      para: usuario.email,
+      nome: usuario.nome?.trim() || usuario.email.split("@")[0],
+      versao: VERSAO_TERMOS,
+    });
+    enviados += 1;
+  }
+
+  revalidatePath("/admin");
+
+  return {
+    ok: true,
+    mensagem: enviados
+      ? `Campanha enviada para ${enviados} usuário(s).`
+      : "Nenhum usuário pendente de aceite nesta versão.",
+  };
+}
 
 const MOTIVOS: Record<string, string> = {
   nao_autenticado: "Entre na sua conta para continuar.",

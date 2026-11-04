@@ -86,6 +86,7 @@ function montarHtml(params: {
           ${escapar(params.rodape ?? "Se você não reconhece esta equipe, ignore esta mensagem.")}
         </p>
         <p style="margin:20px 0 0;color:#506676;font-size:12px;">Equipe Partiu DPM / Etec DPM</p>
+        <p style="margin:4px 0 0;color:#506676;font-size:12px;">Contato: <a href="mailto:e261dir@cps.sp.gov.br" style="color:#506676;">e261dir@cps.sp.gov.br</a></p>
       </div>
     </div>
   </body></html>`;

@@ -44,6 +44,7 @@ export async function enviarEmailConsentimentoMenor(params: {
           Se você não reconhece este cadastro, ignore esta mensagem ou responda recusando no link.
         </p>
         <p style="margin:20px 0 0;color:#506676;font-size:12px;">Equipe Partiu DPM / Etec DPM</p>
+        <p style="margin:4px 0 0;color:#506676;font-size:12px;">Contato: <a href="mailto:e261dir@cps.sp.gov.br" style="color:#506676;">e261dir@cps.sp.gov.br</a></p>
       </div>
     </div>
   </body></html>`;
@@ -59,6 +60,54 @@ export async function enviarEmailConsentimentoMenor(params: {
   if (!resultado.ok) {
     console.warn(
       "[partiu-dpm] E-mail de consentimento não enviado.",
+      resultado.motivo,
+      resultado.motivo === "falha" ? resultado.erro : "",
+    );
+  }
+}
+
+/** Convite de re-aceite dos termos para usuários sem aceite da versão vigente. */
+export async function enviarEmailReaceiteTermos(params: {
+  para: string;
+  nome: string;
+  versao: string;
+}) {
+  const link = `${siteUrl}/termos`;
+  const html = `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#F5F5F5;font-family:Arial,Helvetica,sans-serif;">
+    <div style="max-width:620px;margin:0 auto;padding:24px;">
+      <div style="background:#780000;border-radius:12px 12px 0 0;padding:20px 24px;color:#FDF0D5;">
+        <p style="margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;">Partiu DPM</p>
+        <h1 style="margin:8px 0 0;font-size:22px;">Aceite os termos atualizados</h1>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E6E6E6;border-top:0;border-radius:0 0 12px 12px;padding:24px;">
+        <p style="margin:0 0 14px;color:#003049;font-size:15px;line-height:1.6;">
+          Olá, ${escapar(params.nome)}! Atualizamos os Termos de Uso e a Política de Privacidade (versão ${escapar(params.versao)}).
+        </p>
+        <p style="margin:0 0 20px;color:#003049;font-size:15px;line-height:1.6;">
+          Para continuar usando o portal, leia e registre seu aceite. Leva menos de um minuto.
+        </p>
+        <p style="margin:0 0 18px;">
+          <a href="${escapar(link)}" style="display:inline-block;background:#C1121F;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:700;padding:12px 22px;border-radius:999px;">Ler e aceitar os termos</a>
+        </p>
+        <p style="margin:0;color:#506676;font-size:12px;line-height:1.6;">
+          Se você já aceitou esta versão, ignore esta mensagem. Dúvidas: <a href="mailto:e261dir@cps.sp.gov.br" style="color:#506676;">e261dir@cps.sp.gov.br</a>.
+        </p>
+        <p style="margin:20px 0 0;color:#506676;font-size:12px;">Equipe Partiu DPM / Etec DPM</p>
+      </div>
+    </div>
+  </body></html>`;
+
+  const resultado = await enviarEmail({
+    para: params.para,
+    nome: params.nome,
+    assunto: `Aceite os termos atualizados (versão ${params.versao})`,
+    texto: `Olá, ${params.nome}! Atualizamos os termos (versão ${params.versao}). Leia e aceite em ${link}. Dúvidas: e261dir@cps.sp.gov.br`,
+    html,
+  });
+
+  if (!resultado.ok) {
+    console.warn(
+      "[partiu-dpm] E-mail de re-aceite não enviado.",
       resultado.motivo,
       resultado.motivo === "falha" ? resultado.erro : "",
     );

@@ -66,6 +66,16 @@ export default async function EscolaPage({
                 {escola.pendentes} aguardando responsável.
               </p>
 
+              {aluno === "autorizado" ? (
+                <p
+                  role="status"
+                  className="mt-5 rounded-xl border border-steel-300 bg-steel-50 px-4 py-3 text-sm leading-relaxed text-deep"
+                >
+                  Aluno interno identificado: a inscrição foi autorizada
+                  automaticamente e já está confirmada no evento.
+                </p>
+              ) : null}
+
               {aluno === "pendente" ? (
                 <p
                   role="status"

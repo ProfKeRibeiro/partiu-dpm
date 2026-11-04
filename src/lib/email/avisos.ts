@@ -286,6 +286,7 @@ export function montarAvisoEmail(params: {
     "",
     "Equipe Partiu DPM",
     "Etec DPM",
+    "Contato: e261dir@cps.sp.gov.br",
   ].join("\n");
 
   const linhasHtml = linhas
@@ -341,6 +342,7 @@ export function montarAvisoEmail(params: {
               <td style="padding:18px 30px;background:${COR_FUNDO};border-top:1px solid ${COR_LINHA};">
                 <p style="margin:0;font-size:13px;font-weight:700;color:${COR_CABECALHO};">Equipe Partiu DPM</p>
                 <p style="margin:4px 0 0;font-size:12px;color:${COR_SUAVE};">Etec DPM — Escola Técnica Estadual</p>
+                <p style="margin:4px 0 0;font-size:12px;color:${COR_SUAVE};">Contato: <a href="mailto:e261dir@cps.sp.gov.br" style="color:${COR_SUAVE};">e261dir@cps.sp.gov.br</a></p>
                 <p style="margin:10px 0 0;font-size:11px;line-height:1.5;color:${COR_SUAVE};">Você recebeu este e-mail porque usou o portal Partiu DPM.</p>
               </td>
             </tr>
