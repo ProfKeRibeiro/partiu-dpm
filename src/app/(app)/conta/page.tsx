@@ -7,6 +7,8 @@ import { AppContainer } from "@/components/app/container";
 import { CartaoEventoApp } from "@/components/app/cartao-evento";
 import { EstadoVazio, AvisoApp } from "@/components/app/estados";
 import { HeroParticipante } from "@/components/app/hero-participante";
+import { AvisoConsentimento } from "@/components/consentimentos/aviso-consentimento";
+import { obterConsentimentoMenor } from "@/lib/consentimentos/consultas";
 import { ProximoEventoItem } from "@/components/app/proximo-evento";
 import { ButtonLink } from "@/components/ui/button-link";
 import {
@@ -45,10 +47,11 @@ async function Painel() {
     return <AcessoRestrito variante="sessao" destinoLogin="/conta" />;
   }
 
-  const [perfil, inscricoes, agenda] = await Promise.all([
+  const [perfil, inscricoes, agenda, consentimento] = await Promise.all([
     obterPerfil(),
     listarMinhasInscricoes(),
     listarEventosPublicados(),
+    obterConsentimentoMenor(),
   ]);
 
   const nome = perfil?.nome_completo ?? usuario.nome ?? "participante";
@@ -86,6 +89,12 @@ async function Painel() {
       <HeroParticipante nome={primeiroNome(nome)} />
 
       <AppContainer className="py-7 sm:py-9">
+        {consentimento && consentimento.status !== "aceito" ? (
+          <div className="mb-6">
+            <AvisoConsentimento consentimento={consentimento} />
+          </div>
+        ) : null}
+
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
           <section aria-labelledby="proximos-eventos">
             <div className="flex flex-wrap items-end justify-between gap-3">

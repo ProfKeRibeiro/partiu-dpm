@@ -7,10 +7,19 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CURSOS_DISPONIVEIS } from "@/lib/cursos";
 import { destinoSeguroInterno } from "@/lib/rota-segura";
 import { senhaVazada } from "@/lib/auth/senha-vazada";
+import {
+  criarConsentimentoMenor,
+  registrarAceiteTermos,
+} from "@/lib/consentimentos/acoes";
+import { garantirConsentimentosIniciais } from "@/lib/consentimentos/garantir";
 
 export type EstadoAuth = { erro?: string; mensagem?: string } | null;
 
 const CATEGORIAS_CADASTRO = ["aluno", "servidor", "externo"] as const;
+
+function emailValido(valor: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+}
 
 function texto(formData: FormData, campo: string) {
   const valor = formData.get(campo);
@@ -87,6 +96,8 @@ export async function entrar(
     return { erro: traduzirErroAuth(error.message) };
   }
 
+  await garantirConsentimentosIniciais();
+
   revalidatePath("/", "layout");
   redirect(destino);
 }
@@ -107,6 +118,32 @@ export async function criarConta(
   const categoria = texto(formData, "categoria");
   const curso = texto(formData, "curso");
   const destino = destinoSeguroInterno(formData.get("next"));
+  const aceiteTermos = texto(formData, "aceite_termos").toLowerCase();
+  const menorIdade = texto(formData, "menor_idade").toLowerCase() === "true";
+  const emailResponsavel = texto(
+    formData,
+    "email_responsavel",
+  ).toLowerCase();
+
+  if (aceiteTermos !== "true" && aceiteTermos !== "on") {
+    return {
+      erro: "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.",
+    };
+  }
+
+  if (menorIdade) {
+    if (!emailValido(emailResponsavel)) {
+      return {
+        erro: "Informe um e-mail válido do responsável para continuar.",
+      };
+    }
+
+    if (emailResponsavel === email) {
+      return {
+        erro: "O e-mail do responsável precisa ser diferente do seu.",
+      };
+    }
+  }
 
   if (nome.length < 3) {
     return { erro: "Informe seu nome completo (mínimo 3 caracteres)." };
@@ -147,6 +184,9 @@ export async function criarConta(
         nome_completo: nome,
         categoria,
         curso: categoria === "aluno" ? curso : null,
+        aceite_termos_pendente: true,
+        menor_idade: menorIdade,
+        email_responsavel: menorIdade ? emailResponsavel : null,
       },
       emailRedirectTo: `${siteUrl}/auth/confirm?next=${encodeURIComponent(destino)}`,
     },
@@ -157,6 +197,14 @@ export async function criarConta(
   }
 
   if (data.session) {
+    await registrarAceiteTermos();
+
+    if (menorIdade) {
+      const consentimento = new FormData();
+      consentimento.append("email_responsavel", emailResponsavel);
+      await criarConsentimentoMenor(null, consentimento);
+    }
+
     revalidatePath("/", "layout");
     redirect(destino);
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useActionState } from "react";
 import { criarConta, entrar, type EstadoAuth } from "@/lib/auth/acoes";
 import { AvisoFormulario } from "@/components/ui/aviso-formulario";
@@ -32,11 +32,45 @@ export function FormularioAcesso({
   const [categoria, setCategoria] = useState<"aluno" | "servidor" | "externo">(
     "aluno",
   );
+  const [aceite, setAceite] = useState(false);
+  const [menorIdade, setMenorIdade] = useState(false);
+  const [emailResponsavel, setEmailResponsavel] = useState("");
+  const [erroLocal, setErroLocal] = useState("");
+  const alertaRef = useRef<HTMLParagraphElement>(null);
   const erros = camposDoErro(estado?.erro);
   const ID_ERRO = "erro-acesso";
 
   return (
-    <form action={formAction} className="mt-6 space-y-4">
+    <form
+      action={formAction}
+      className="mt-6 space-y-4"
+      onSubmit={(evento) => {
+        if (modo !== "criar") return;
+
+        if (!aceite) {
+          evento.preventDefault();
+          setErroLocal(
+            "Para criar a conta, marque que leu e aceita os Termos de Uso e a Política de Privacidade.",
+          );
+          window.requestAnimationFrame(() => alertaRef.current?.focus());
+          return;
+        }
+
+        if (
+          menorIdade &&
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailResponsavel.trim())
+        ) {
+          evento.preventDefault();
+          setErroLocal(
+            "Informe um e-mail válido do responsável para continuar.",
+          );
+          window.requestAnimationFrame(() => alertaRef.current?.focus());
+          return;
+        }
+
+        setErroLocal("");
+      }}
+    >
       <input type="hidden" name="next" value={next} />
 
       <AvisoFormulario tipo="erro" mensagem={estado?.erro} id={ID_ERRO} />
@@ -177,6 +211,109 @@ export function FormularioAcesso({
           </p>
         )}
       </div>
+
+      {modo === "criar" ? (
+        <div className="space-y-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-deep/10 bg-canvas/60 p-3">
+            <input
+              type="checkbox"
+              name="aceite_termos"
+              value="true"
+              checked={aceite}
+              onChange={(evento) => {
+                setAceite(evento.target.checked);
+                setErroLocal("");
+              }}
+              aria-invalid={erroLocal && !aceite ? true : undefined}
+              aria-describedby="ajuda-termos"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-deep/30 accent-brick focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+            />
+            <span
+              id="ajuda-termos"
+              className="text-xs leading-relaxed text-ink"
+            >
+              Li e aceito os{" "}
+              <Link
+                href="/termos"
+                className="font-semibold text-brick underline underline-offset-4 hover:text-molten"
+              >
+                Termos de Uso
+              </Link>{" "}
+              e a{" "}
+              <Link
+                href="/privacidade"
+                className="font-semibold text-brick underline underline-offset-4 hover:text-molten"
+              >
+                Política de Privacidade
+              </Link>
+              .
+            </span>
+          </label>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-deep/10 bg-canvas/60 p-3">
+            <input
+              type="checkbox"
+              name="menor_idade"
+              value="true"
+              checked={menorIdade}
+              onChange={(evento) => {
+                setMenorIdade(evento.target.checked);
+                setErroLocal("");
+              }}
+              aria-describedby="ajuda-menor"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-deep/30 accent-brick focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+            />
+            <span id="ajuda-menor" className="text-xs leading-relaxed text-ink">
+              <span className="block font-semibold text-deep">
+                Tenho menos de 18 anos
+              </span>
+              A conta só será validada depois que o responsável autorizar pelo
+              link enviado a ele.
+            </span>
+          </label>
+
+          {menorIdade ? (
+            <div>
+              <label htmlFor="email_responsavel" className={rotulo}>
+                E-mail do responsável
+              </label>
+              <input
+                id="email_responsavel"
+                name="email_responsavel"
+                type="email"
+                required
+                value={emailResponsavel}
+                onChange={(evento) => {
+                  setEmailResponsavel(evento.target.value);
+                  setErroLocal("");
+                }}
+                autoComplete="off"
+                aria-describedby="ajuda-responsavel"
+                className={campo}
+                placeholder="responsavel@exemplo.com"
+              />
+              <p
+                id="ajuda-responsavel"
+                className="mt-1.5 text-xs leading-relaxed text-muted"
+              >
+                Enviaremos um pedido de autorização para este e-mail. Ele não
+                aparece publicamente.
+              </p>
+            </div>
+          ) : null}
+
+          {erroLocal ? (
+            <p
+              ref={alertaRef}
+              tabIndex={-1}
+              role="alert"
+              className="rounded-xl border border-ember-400/40 bg-ember-50 px-4 py-3 text-sm text-molten outline-none focus-visible:ring-4 focus-visible:ring-brick/20"
+            >
+              {erroLocal}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <button
         type="submit"

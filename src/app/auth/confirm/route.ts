@@ -1,5 +1,6 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { garantirConsentimentosIniciais } from "@/lib/consentimentos/garantir";
 import { isSupabaseConfigured } from "@/lib/env";
 import { destinoSeguroInterno } from "@/lib/rota-segura";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      await garantirConsentimentosIniciais();
       return NextResponse.redirect(new URL(destino, request.nextUrl.origin));
     }
 
