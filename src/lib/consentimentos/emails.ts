@@ -18,7 +18,8 @@ export async function enviarEmailConsentimentoMenor(params: {
   eventoTitulo: string | null;
   token: string;
 }) {
-  const link = `${siteUrl}/consentimento/${params.token}`;
+  const linkAceitar = `${siteUrl}/consentimento/${params.token}?decisao=aceitar`;
+  const linkRecusar = `${siteUrl}/consentimento/${params.token}?decisao=recusar`;
   const evento = params.eventoTitulo
     ? ` para o evento ${params.eventoTitulo}`
     : "";
@@ -35,13 +36,17 @@ export async function enviarEmailConsentimentoMenor(params: {
           Como a pessoa é menor de idade, precisamos da sua autorização para tratar os dados e concluir a inscrição.
         </p>
         <p style="margin:0 0 22px;color:#003049;font-size:15px;line-height:1.6;">
-          O link abaixo registra seu aceite ou recusa, com data, hora e origem. Ele expira em 7 dias.
+          Ao <strong>aceitar</strong>, você autoriza o tratamento dos dados pessoais do titular para esta inscrição — com isso habilita a participação do titular no evento, no sorteio e nos canais de comunicação que enviam publicações sobre a divulgação do vestibulinho e vagas remanescentes na ETEC DPM — e a inscrição segue para a confirmação. Ao <strong>recusar</strong>, você não autoriza o tratamento e a inscrição não será efetivada.
+        </p>
+        <p style="margin:0 0 22px;color:#003049;font-size:15px;line-height:1.6;">
+          O link escolhido registra seu aceite ou recusa, com data, hora e origem. Ele expira em 7 dias.
         </p>
         <p style="margin:0 0 18px;">
-          <a href="${escapar(link)}" style="display:inline-block;background:#C1121F;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:700;padding:12px 22px;border-radius:999px;">Autorizar ou recusar</a>
+          <a href="${escapar(linkAceitar)}" style="display:inline-block;background:#C1121F;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:700;padding:12px 22px;border-radius:999px;margin-right:10px;">Aceitar autorização</a>
+          <a href="${escapar(linkRecusar)}" style="display:inline-block;background:#FFFFFF;color:#C1121F;text-decoration:none;font-size:14px;font-weight:700;padding:12px 22px;border:2px solid #C1121F;border-radius:999px;">Recusar autorização</a>
         </p>
         <p style="margin:0;color:#506676;font-size:12px;line-height:1.6;">
-          Se você não reconhece este cadastro, ignore esta mensagem ou responda recusando no link.
+          Se você não reconhece este cadastro, ignore esta mensagem ou utilize o link de recusa.
         </p>
         <p style="margin:20px 0 0;color:#506676;font-size:12px;">Equipe Partiu DPM / Etec DPM</p>
         <p style="margin:4px 0 0;color:#506676;font-size:12px;">Contato: <a href="mailto:e261dir@cps.sp.gov.br" style="color:#506676;">e261dir@cps.sp.gov.br</a></p>
@@ -53,7 +58,7 @@ export async function enviarEmailConsentimentoMenor(params: {
     para: params.para,
     nome: null,
     assunto: `Autorização de responsável — ${params.nomeTitular}`,
-    texto: `Cadastro de ${params.nomeTitular}${evento}. Autorize ou recuse em ${link}`,
+    texto: `Cadastro de ${params.nomeTitular}${evento}. Como a pessoa é menor de idade, precisamos da sua autorização para tratar os dados pessoais do titular e concluir a inscrição. Ao aceitar, você autoriza o tratamento dos dados pessoais do titular e, com isso, habilita a participação do titular no evento, no sorteio e nos canais de comunicação que enviam publicações sobre a divulgação do vestibulinho e vagas remanescentes na ETEC DPM; a inscrição segue para a confirmação. Ao recusar, você não autoriza o tratamento e a inscrição não será efetivada. Aceite a autorização: ${linkAceitar} | Recuse a autorização: ${linkRecusar}`,
     html,
   });
 

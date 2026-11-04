@@ -36,10 +36,10 @@ export default async function ConsentimentoPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ resposta?: string }>;
+  searchParams: Promise<{ resposta?: string; decisao?: string }>;
 }) {
   const { token } = await params;
-  const { resposta } = await searchParams;
+  const { resposta, decisao } = await searchParams;
   const tokenValido = REGEX_UUID.test(token);
 
   let consentimento: Consentimento | null = null;
@@ -61,6 +61,11 @@ export default async function ConsentimentoPage({
 
   const status = expirado ? "expirado" : consentimento?.status;
   const podeResponder = status === "pendente";
+
+  const decisaoPrevia =
+    decisao === "aceitar" || decisao === "recusar" ? decisao : null;
+  const bloquearDecisao = (valor: string) =>
+    decisaoPrevia !== null && decisaoPrevia !== valor;
 
   const aviso =
     resposta === "erro"
@@ -123,7 +128,8 @@ export default async function ConsentimentoPage({
                     type="submit"
                     name="decisao"
                     value="aceitar"
-                    className="inline-flex h-11 items-center justify-center rounded-full bg-brick px-5 text-sm font-semibold text-white transition-colors hover:bg-molten focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+                    disabled={bloquearDecisao("aceitar")}
+                    className="inline-flex h-11 items-center justify-center rounded-full bg-brick px-5 text-sm font-semibold text-white transition-colors hover:bg-molten focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Autorizar cadastro
                   </button>
@@ -131,7 +137,8 @@ export default async function ConsentimentoPage({
                     type="submit"
                     name="decisao"
                     value="recusar"
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-deep/20 bg-white px-5 text-sm font-semibold text-deep transition-colors hover:bg-papaya/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+                    disabled={bloquearDecisao("recusar")}
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-deep/20 bg-white px-5 text-sm font-semibold text-deep transition-colors hover:bg-papaya/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Recusar
                   </button>
