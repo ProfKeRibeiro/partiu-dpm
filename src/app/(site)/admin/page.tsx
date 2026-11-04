@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { AcessoRestrito } from "@/components/auth/acesso-restrito";
 import { BotaoExcluirEvento } from "@/components/admin/botao-excluir-evento";
+import { CampanhaTermos } from "@/components/admin/campanha-termos";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import {
@@ -136,6 +137,8 @@ export default async function AdminPage() {
 
       <main className="flex-1 bg-canvas py-10 sm:py-14">
         <Container>
+          {administrador ? <CampanhaTermos /> : null}
+
           <div className="grid gap-4 sm:grid-cols-3">
             {[
               {
