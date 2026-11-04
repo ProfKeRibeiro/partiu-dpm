@@ -28,8 +28,10 @@ import {
   obterEventoAdmin,
   obterEventoParaEdicao,
 } from "@/lib/admin/consultas";
-import { usuarioEhAdmin, usuarioPodeOrganizar } from "@/lib/auth/sessao";
+import { usuarioEhAdmin, usuarioPodeOrganizar, obterUsuario } from "@/lib/auth/sessao";
 import { listarEquipesDoEvento } from "@/lib/equipes/consultas";
+import { listarEscolasDoEvento } from "@/lib/escolas/consultas";
+import { EscolasDoEvento } from "@/components/admin/escolas-evento";
 import { rotuloPainel } from "@/lib/app-utils";
 import { isSupabaseConfigured } from "@/lib/env";
 import { formatarDataCurta, formatarDataHora, formatarPeriodo } from "@/lib/format";
@@ -141,6 +143,12 @@ async function AdminEventoConteudo({
   const inscricoes = await listarInscricoesAdmin(evento.id);
   const convocacoes = await listarConvocacoesAdmin(evento.id);
   const equipesDoEvento = await listarEquipesDoEvento(evento.id);
+  const escolas = await listarEscolasDoEvento(evento.id);
+  const usuarioAtual = await obterUsuario();
+  const podeInscreverEscola = /@cps\.sp\.gov\.br$/i.test(
+    usuarioAtual?.email ?? "",
+  );
+  const mostrarEscolas = detalhes.tipo === "feira" || escolas.length > 0;
 
   const confirmadas = inscricoes.filter(
     (inscricao) => inscricao.status === "confirmada",
@@ -560,6 +568,14 @@ async function AdminEventoConteudo({
               </div>
             )}
           </section>
+
+          {mostrarEscolas ? (
+            <EscolasDoEvento
+              eventoId={evento.id}
+              escolas={escolas}
+              podeInscrever={podeInscreverEscola}
+            />
+          ) : null}
 
           <section className="mt-8 rounded-2xl border border-deep/10 bg-white p-5 shadow-suave sm:p-6">
             <h2 className="font-display text-xl font-semibold tracking-tight text-deep">

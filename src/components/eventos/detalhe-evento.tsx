@@ -340,6 +340,24 @@ export async function DetalheEvento({
                 </dl>
               </Secao>
 
+              {evento.tipo === "feira" || evento.publicoAlvo === "externo" ? (
+                <Secao titulo="Participação de escolas">
+                  <p className="text-sm leading-relaxed text-ink">
+                    Professores e coordenadores podem inscrever a escola e
+                    receber um código de subinscrição. Os alunos usam esse
+                    código para preencher os próprios dados, com autorização do
+                    responsável.
+                  </p>
+                  <ButtonLink
+                    href="/escolas"
+                    variante="contorno"
+                    className="mt-4 w-full sm:w-auto"
+                  >
+                    Entrar com código da escola
+                  </ButtonLink>
+                </Secao>
+              ) : null}
+
               <Secao titulo="Inscrições">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-xl border border-line bg-canvas p-4">
