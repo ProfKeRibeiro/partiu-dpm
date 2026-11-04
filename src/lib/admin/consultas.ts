@@ -43,6 +43,10 @@ export type EventoAdminEdicao = {
   imagemUrl: string | null;
   corTema: string;
   inscritos: number;
+  permiteEquipes: boolean;
+  equipeMin: number;
+  equipeMax: number;
+  exigeOrientador: boolean;
 };
 
 export type InscricaoAdmin = {
@@ -272,6 +276,12 @@ export async function obterEventoParaEdicao(
     corTema: textoOuNulo(registro.cor_tema) ?? "azul-petroleo",
     inscritos:
       typeof registro.inscritos === "number" ? registro.inscritos : 0,
+    permiteEquipes: registro.permite_equipes === true,
+    equipeMin:
+      typeof registro.equipe_min === "number" ? registro.equipe_min : 2,
+    equipeMax:
+      typeof registro.equipe_max === "number" ? registro.equipe_max : 10,
+    exigeOrientador: registro.exige_orientador !== false,
   };
 }
 

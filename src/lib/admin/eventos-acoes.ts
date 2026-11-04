@@ -56,6 +56,10 @@ type PayloadEvento = {
   coordenador_cargo: string | null;
   superintendente_nome: string | null;
   superintendente_cargo: string | null;
+  permite_equipes?: boolean;
+  equipe_min?: number;
+  equipe_max?: number;
+  exige_orientador?: boolean;
 };
 
 function texto(formData: FormData, campo: string) {
@@ -123,6 +127,47 @@ function montarPayload(
   const coordenadorCargo = texto(formData, "coordenador_cargo");
   const superintendenteNome = texto(formData, "superintendente_nome");
   const superintendenteCargo = texto(formData, "superintendente_cargo");
+
+  const temEquipes = formData.has("permite_equipes");
+  const permiteEquipes = temEquipes
+    ? ["true", "on", "1"].includes(
+        texto(formData, "permite_equipes").toLowerCase(),
+      )
+    : undefined;
+  const equipeMinBruto = texto(formData, "equipe_min");
+  const equipeMaxBruto = texto(formData, "equipe_max");
+  const exigeOrientador = formData.has("exige_orientador")
+    ? ["true", "on", "1"].includes(
+        texto(formData, "exige_orientador").toLowerCase(),
+      )
+    : undefined;
+
+  let equipeMin: number | undefined;
+  let equipeMax: number | undefined;
+
+  if (temEquipes) {
+    equipeMin = equipeMinBruto ? Number(equipeMinBruto) : 2;
+    equipeMax = equipeMaxBruto ? Number(equipeMaxBruto) : 10;
+
+    if (
+      !Number.isInteger(equipeMin) ||
+      !Number.isInteger(equipeMax) ||
+      equipeMin < 2 ||
+      equipeMin > 10 ||
+      equipeMax < 2 ||
+      equipeMax > 10
+    ) {
+      return {
+        erro: "O tamanho da equipe deve ser um número inteiro entre 2 e 10.",
+      };
+    }
+
+    if (equipeMin > equipeMax) {
+      return {
+        erro: "O mínimo de membros não pode ser maior que o máximo.",
+      };
+    }
+  }
 
   if (titulo.length < 3) {
     return { erro: "Informe um título com pelo menos 3 caracteres." };
@@ -272,6 +317,14 @@ function montarPayload(
       coordenador_cargo: coordenadorCargo || null,
       superintendente_nome: superintendenteNome || null,
       superintendente_cargo: superintendenteCargo || null,
+      ...(temEquipes
+        ? {
+            permite_equipes: permiteEquipes,
+            equipe_min: equipeMin,
+            equipe_max: equipeMax,
+            exige_orientador: exigeOrientador ?? true,
+          }
+        : {}),
     },
   };
 }
