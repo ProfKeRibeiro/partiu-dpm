@@ -65,6 +65,16 @@ export async function criarEquipe(
     return { ok: false, mensagem: "Evento inválido." };
   }
 
+  const orientadorEmail = texto(formData, "orientador_email").toLowerCase();
+
+  if (orientadorEmail && !/^[^@\s]+@cps\.sp\.gov\.br$/.test(orientadorEmail)) {
+    return {
+      ok: false,
+      mensagem:
+        "O orientador precisa ser professor com e-mail institucional @cps.sp.gov.br.",
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
 
@@ -76,7 +86,7 @@ export async function criarEquipe(
     p_evento_id: eventoId,
     p_nome: texto(formData, "nome"),
     p_orientador_nome: texto(formData, "orientador_nome") || null,
-    p_orientador_email: texto(formData, "orientador_email") || null,
+    p_orientador_email: orientadorEmail || null,
   });
 
   if (error) {

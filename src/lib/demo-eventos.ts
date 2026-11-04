@@ -1,8 +1,8 @@
-import type { Evento } from "@/types/evento";
+﻿import type { Evento } from "@/types/evento";
 
 /**
- * Eventos de demonstração usados somente enquanto o Supabase não está
- * configurado (ou em desenvolvimento). Nenhum dado real é sobrescrito.
+ * Eventos de demonstraÃ§Ã£o usados somente enquanto o Supabase nÃ£o estÃ¡
+ * configurado (ou em desenvolvimento). Nenhum dado real Ã© sobrescrito.
  */
 export const eventosDemonstracao: Evento[] = [
   {
@@ -10,10 +10,10 @@ export const eventosDemonstracao: Evento[] = [
     slug: "treinamento-mongodb",
     titulo: "Treinamento MongoDB: do zero ao banco de dados na nuvem",
     descricao:
-      "Um treinamento prático para quem quer entender como bancos de dados NoSQL funcionam de verdade. Vamos começar pelos conceitos essenciais do MongoDB, passar pela modelagem de documentos e chegar à criação de um banco na nuvem com o MongoDB Atlas.\n\nDurante o encontro, você vai criar coleções, inserir e consultar dados, entender índices e sair com um projeto funcionando. Não é necessário ter experiência prévia com bancos NoSQL — apenas vontade de aprender e um notebook.\n\nTraga seu notebook. O laboratório também possui computadores disponíveis.",
+      "Um treinamento prÃ¡tico para quem quer entender como bancos de dados NoSQL funcionam de verdade. Vamos comeÃ§ar pelos conceitos essenciais do MongoDB, passar pela modelagem de documentos e chegar Ã  criaÃ§Ã£o de um banco na nuvem com o MongoDB Atlas.\n\nDurante o encontro, vocÃª vai criar coleÃ§Ãµes, inserir e consultar dados, entender Ã­ndices e sair com um projeto funcionando. NÃ£o Ã© necessÃ¡rio ter experiÃªncia prÃ©via com bancos NoSQL â€” apenas vontade de aprender e um notebook.\n\nTraga seu notebook. O laboratÃ³rio tambÃ©m possui computadores disponÃ­veis.",
     tipo: "treinamento",
     modalidade: "presencial",
-    local: "Laboratório de Informática 3 · ETEC",
+    local: "LaboratÃ³rio de InformÃ¡tica 3 Â· ETEC",
     linkAcesso: null,
     inicio: "2026-11-14T17:00:00.000Z",
     fim: "2026-11-14T20:00:00.000Z",
@@ -27,16 +27,20 @@ export const eventosDemonstracao: Evento[] = [
     status: "publicado",
     imagemUrl: null,
     corTema: "esmeralda",
+    permiteEquipes: false,
+    equipeMin: 2,
+    equipeMax: 10,
+    exigeOrientador: true,
   },
   {
     id: "a1b2c3d4-e5f6-4a7b-8c9d-000000000002",
     slug: "oficina-git-github",
     titulo: "Oficina Git e GitHub: versionamento para projetos reais",
     descricao:
-      "Uma oficina mão na massa para quem já precisa versionar projetos e ainda se perde entre commits, branches e pull requests. Vamos configurar o Git, trabalhar em equipe com o GitHub e simular um fluxo real de colaboração.\n\nAo final, você terá um repositório publicado e saberá como resolver os conflitos mais comuns do dia a dia.\n\nNão é necessário conhecimento avançado, mas é recomendável já ter noções básicas de lógica de programação.",
+      "Uma oficina mÃ£o na massa para quem jÃ¡ precisa versionar projetos e ainda se perde entre commits, branches e pull requests. Vamos configurar o Git, trabalhar em equipe com o GitHub e simular um fluxo real de colaboraÃ§Ã£o.\n\nAo final, vocÃª terÃ¡ um repositÃ³rio publicado e saberÃ¡ como resolver os conflitos mais comuns do dia a dia.\n\nNÃ£o Ã© necessÃ¡rio conhecimento avanÃ§ado, mas Ã© recomendÃ¡vel jÃ¡ ter noÃ§Ãµes bÃ¡sicas de lÃ³gica de programaÃ§Ã£o.",
     tipo: "oficina",
     modalidade: "presencial",
-    local: "Laboratório de Informática 2 · ETEC",
+    local: "LaboratÃ³rio de InformÃ¡tica 2 Â· ETEC",
     linkAcesso: null,
     inicio: "2026-11-21T12:00:00.000Z",
     fim: "2026-11-21T15:00:00.000Z",
@@ -50,16 +54,20 @@ export const eventosDemonstracao: Evento[] = [
     status: "publicado",
     imagemUrl: null,
     corTema: "azul",
+    permiteEquipes: false,
+    equipeMin: 2,
+    equipeMax: 10,
+    exigeOrientador: true,
   },
   {
     id: "a1b2c3d4-e5f6-4a7b-8c9d-000000000003",
     slug: "palestra-carreiras-cloud-devops",
     titulo: "Palestra: carreiras em cloud e DevOps",
     descricao:
-      "Uma conversa sobre as carreiras que estão crescendo com computação em nuvem: o que faz um profissional de cloud, o que esperar da rotina de DevOps e quais caminhos de estudo fazem sentido para estudantes técnicos.\n\nO encontro é online e aberto a toda a comunidade. O link de acesso será enviado por e-mail após a inscrição.",
+      "Uma conversa sobre as carreiras que estÃ£o crescendo com computaÃ§Ã£o em nuvem: o que faz um profissional de cloud, o que esperar da rotina de DevOps e quais caminhos de estudo fazem sentido para estudantes tÃ©cnicos.\n\nO encontro Ã© online e aberto a toda a comunidade. O link de acesso serÃ¡ enviado por e-mail apÃ³s a inscriÃ§Ã£o.",
     tipo: "palestra",
     modalidade: "online",
-    local: "Online · link enviado após a inscrição",
+    local: "Online Â· link enviado apÃ³s a inscriÃ§Ã£o",
     linkAcesso: null,
     inicio: "2026-12-03T22:30:00.000Z",
     fim: "2026-12-04T00:00:00.000Z",
@@ -73,16 +81,20 @@ export const eventosDemonstracao: Evento[] = [
     status: "publicado",
     imagemUrl: null,
     corTema: "violeta",
+    permiteEquipes: false,
+    equipeMin: 2,
+    equipeMax: 10,
+    exigeOrientador: true,
   },
   {
     id: "a1b2c3d4-e5f6-4a7b-8c9d-000000000004",
     slug: "feira-de-projetos-2026",
     titulo: "Feira de Projetos 2026",
     descricao:
-      "A feira reúne os projetos desenvolvidos pelos estudantes ao longo do ano: aplicações web, automações, jogos, robótica e soluções para problemas reais da comunidade.\n\nVenha conhecer os bastidores dos projetos, conversar com as equipes e se inspirar para o próximo semestre.",
+      "A feira reÃºne os projetos desenvolvidos pelos estudantes ao longo do ano: aplicaÃ§Ãµes web, automaÃ§Ãµes, jogos, robÃ³tica e soluÃ§Ãµes para problemas reais da comunidade.\n\nVenha conhecer os bastidores dos projetos, conversar com as equipes e se inspirar para o prÃ³ximo semestre.",
     tipo: "feira",
     modalidade: "presencial",
-    local: "Pátio central · ETEC",
+    local: "PÃ¡tio central Â· ETEC",
     linkAcesso: null,
     inicio: "2026-09-26T12:00:00.000Z",
     fim: "2026-09-26T19:00:00.000Z",
@@ -96,5 +108,10 @@ export const eventosDemonstracao: Evento[] = [
     status: "publicado",
     imagemUrl: null,
     corTema: "laranja",
+    permiteEquipes: false,
+    equipeMin: 2,
+    equipeMax: 10,
+    exigeOrientador: true,
   },
 ];
+

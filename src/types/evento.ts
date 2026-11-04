@@ -45,4 +45,8 @@ export type Evento = {
   status: StatusEvento;
   imagemUrl: string | null;
   corTema: string | null;
+  permiteEquipes: boolean;
+  equipeMin: number;
+  equipeMax: number;
+  exigeOrientador: boolean;
 };

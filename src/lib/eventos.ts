@@ -53,7 +53,35 @@ function detalhesErro(erro: unknown) {
  * as páginas.
  */
 const CAMPOS_EVENTO_PUBLICO =
-  "id, titulo, descricao, tipo, modalidade, local_evento, data_inicio, data_fim, inicio_inscricoes, fim_inscricoes, limite_vagas, publico_alvo, cursos_permitidos, series_permitidas, status, imagem_url, cor_tema, inscritos" as const;
+  "id, titulo, descricao, tipo, modalidade, local_evento, data_inicio, data_fim, inicio_inscricoes, fim_inscricoes, limite_vagas, publico_alvo, cursos_permitidos, series_permitidas, status, imagem_url, cor_tema, inscritos";
+
+/**
+ * Configuração de equipes. Fica em uma lista separada porque as colunas novas
+ * só podem ser lidas por `anon` depois do GRANT correspondente: se a leitura
+ * falhar por permissão, a página continua funcionando sem os recursos de
+ * equipe em vez de quebrar.
+ */
+const CAMPOS_EQUIPE_PUBLICO =
+  "permite_equipes, equipe_min, equipe_max, exige_orientador";
+
+/**
+ * Tenta ler as colunas de equipe e, se o banco negar (grant por coluna ainda
+ * não aplicado para `anon`), repete a consulta sem elas.
+ */
+async function consultarComFallback<T>(
+  consulta: (campos: string) => PromiseLike<{ data: T; error: unknown }>,
+) {
+  const completa = `${CAMPOS_EVENTO_PUBLICO}, ${CAMPOS_EQUIPE_PUBLICO}`;
+  const primeira = await consulta(completa);
+
+  if (!primeira.error) return primeira;
+
+  console.warn(
+    "[partiu-dpm] Sem acesso às colunas de equipe do evento; seguindo sem elas.",
+  );
+
+  return consulta(CAMPOS_EVENTO_PUBLICO);
+}
 
 function normalizarChave(valor: string) {
   return valor
@@ -278,6 +306,10 @@ function mapearEvento(registro: Record<string, unknown>): Evento | null {
       "banner_url",
     ]),
     corTema: valorTexto(registro, ["cor_tema"]),
+    permiteEquipes: registro.permite_equipes === true,
+    equipeMin: valorNumero(registro, ["equipe_min"]) ?? 2,
+    equipeMax: valorNumero(registro, ["equipe_max"]) ?? 10,
+    exigeOrientador: registro.exige_orientador !== false,
   };
 }
 
@@ -297,11 +329,13 @@ export const listarEventosPublicados = cache(
 
     try {
       const supabase = createSupabasePublicClient();
-      const { data, error } = await supabase
-        .from("eventos")
-        .select(CAMPOS_EVENTO_PUBLICO)
-        .eq("status", "publicado")
-        .limit(100);
+      const { data, error } = await consultarComFallback((campos) =>
+        supabase
+          .from("eventos")
+          .select(campos)
+          .eq("status", "publicado")
+          .limit(100),
+      );
 
       if (error) throw error;
 
@@ -342,11 +376,9 @@ export const buscarEventoPublicado = cache(
 
     try {
       const supabase = createSupabasePublicClient();
-      const { data, error } = await supabase
-        .from("eventos")
-        .select(CAMPOS_EVENTO_PUBLICO)
-        .eq("id", id)
-        .maybeSingle();
+      const { data, error } = await consultarComFallback((campos) =>
+        supabase.from("eventos").select(campos).eq("id", id).maybeSingle(),
+      );
 
       if (error) throw error;
 

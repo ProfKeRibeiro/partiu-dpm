@@ -140,6 +140,8 @@ export function FormularioEvento({
               <option value="curso">Curso</option>
               <option value="feira">Feira</option>
               <option value="treinamento">Treinamento</option>
+              <option value="maratona">Maratona</option>
+              <option value="competicao">Competição</option>
               <option value="outro">Outro</option>
             </select>
           </label>

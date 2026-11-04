@@ -28,6 +28,8 @@ const ROTULOS_TIPO: Record<string, string> = {
   workshop: "Workshop",
   seminario: "Seminário",
   encontro: "Encontro",
+  maratona: "Maratona",
+  competicao: "Competição",
 };
 
 export const ROTULOS_SITUACAO: Record<SituacaoInscricao, string> = {
@@ -52,6 +54,8 @@ const FRASES_PARTICIPACAO: Record<string, string> = {
   feira: "participou da feira",
   curso: "participou do curso",
   treinamento: "participou do treinamento",
+  maratona: "participou da maratona",
+  competicao: "participou da competição",
 };
 
 /**
