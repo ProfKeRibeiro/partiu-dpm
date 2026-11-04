@@ -17,6 +17,8 @@ const TIPOS = [
   "curso",
   "feira",
   "treinamento",
+  "maratona",
+  "competicao",
   "outro",
 ] as const;
 

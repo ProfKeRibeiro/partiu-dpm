@@ -29,6 +29,7 @@ import {
   obterEventoParaEdicao,
 } from "@/lib/admin/consultas";
 import { usuarioEhAdmin, usuarioPodeOrganizar } from "@/lib/auth/sessao";
+import { listarEquipesDoEvento } from "@/lib/equipes/consultas";
 import { rotuloPainel } from "@/lib/app-utils";
 import { isSupabaseConfigured } from "@/lib/env";
 import { formatarDataCurta, formatarDataHora, formatarPeriodo } from "@/lib/format";
@@ -139,6 +140,7 @@ async function AdminEventoConteudo({
 
   const inscricoes = await listarInscricoesAdmin(evento.id);
   const convocacoes = await listarConvocacoesAdmin(evento.id);
+  const equipesDoEvento = await listarEquipesDoEvento(evento.id);
 
   const confirmadas = inscricoes.filter(
     (inscricao) => inscricao.status === "confirmada",
@@ -550,6 +552,68 @@ async function AdminEventoConteudo({
                               Registre a presença para emitir.
                             </span>
                           )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          <section className="mt-8 rounded-2xl border border-deep/10 bg-white p-5 shadow-suave sm:p-6">
+            <h2 className="font-display text-xl font-semibold tracking-tight text-deep">
+              Equipes
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted">
+              Grupos inscritos neste evento. Abra a equipe para ver membros e
+              orientador na página pública.
+            </p>
+
+            {equipesDoEvento.length === 0 ? (
+              <p className="mt-4 rounded-xl border border-line bg-shell px-4 py-3 text-sm text-muted">
+                {equipesDoEvento.length === 0
+                  ? "Nenhuma equipe inscrita neste evento até agora."
+                  : null}
+              </p>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-xs uppercase tracking-[0.1em] text-muted">
+                      <th className="py-2 pr-3 font-semibold">Equipe</th>
+                      <th className="py-2 pr-3 font-semibold">Status</th>
+                      <th className="py-2 pr-3 font-semibold">Membros</th>
+                      <th className="py-2 pr-3 font-semibold">Orientador</th>
+                      <th className="py-2 font-semibold">Página</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {equipesDoEvento.map((equipe) => (
+                      <tr key={equipe.id} className="border-b border-line/60">
+                        <td className="py-2.5 pr-3 font-medium text-deep">
+                          {equipe.nome}
+                        </td>
+                        <td className="py-2.5 pr-3 text-muted">
+                          {equipe.status === "confirmada"
+                            ? "Confirmada"
+                            : equipe.status === "cancelada"
+                              ? "Cancelada"
+                              : "Formando"}
+                        </td>
+                        <td className="py-2.5 pr-3 text-muted">
+                          {equipe.membros}
+                        </td>
+                        <td className="py-2.5 pr-3 text-muted">
+                          {equipe.orientadorNome ?? "—"}
+                        </td>
+                        <td className="py-2.5">
+                          <Link
+                            href={`/equipes/${equipe.codigo}`}
+                            className="text-xs font-semibold text-brick underline underline-offset-4 hover:text-molten"
+                          >
+                            Abrir
+                          </Link>
                         </td>
                       </tr>
                     ))}

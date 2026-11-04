@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { IconeCalendario, IconeCheck, IconeSetaDireita } from "@/components/ui/icons";
 import { AvisoFormulario } from "@/components/ui/aviso-formulario";
 import { ImagemDoEvento } from "@/components/admin/imagem-evento";
@@ -39,6 +39,10 @@ type ValoresIniciais = {
   status: string;
   imagemUrl: string | null;
   corTema: string;
+  permiteEquipes?: boolean;
+  equipeMin?: number;
+  equipeMax?: number;
+  exigeOrientador?: boolean;
 };
 
 const input =
@@ -89,6 +93,15 @@ export function FormularioEvento({
     }),
   );
   const series = seriesDisponiveis;
+  const [permiteEquipes, setPermiteEquipes] = useState(
+    valoresIniciais?.permiteEquipes ?? false,
+  );
+  const [exigeOrientador, setExigeOrientador] = useState(
+    valoresIniciais?.exigeOrientador ?? true,
+  );
+  const [equipeMin, setEquipeMin] = useState(valoresIniciais?.equipeMin ?? 2);
+  const [equipeMax, setEquipeMax] = useState(valoresIniciais?.equipeMax ?? 10);
+  const tamanhoInvalido = permiteEquipes && equipeMin > equipeMax;
 
   return (
     <form action={acao} className="space-y-7">
@@ -356,6 +369,101 @@ export function FormularioEvento({
       <section className="rounded-2xl border border-deep/10 bg-white p-5 shadow-sm sm:p-6">
         <div>
           <h2 className="font-display text-lg font-semibold text-deep">
+            Evento de equipe
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            Use para maratonas e competições em que os participantes se
+            inscrevem em grupos com um professor orientador.
+          </p>
+        </div>
+
+        <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-deep/10 bg-canvas/60 p-4">
+          <input
+            type="checkbox"
+            name="permite_equipes"
+            value="true"
+            checked={permiteEquipes}
+            onChange={(evento) => setPermiteEquipes(evento.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-deep/30 accent-brick focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+          />
+          <span className="text-sm leading-relaxed text-ink">
+            <span className="block font-semibold text-deep">
+              Permitir inscrição em equipes
+            </span>
+            Cada membro reserva a própria vaga; a equipe é confirmada ao atingir
+            o mínimo de participantes.
+          </span>
+        </label>
+
+        {permiteEquipes ? (
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <label>
+              <span className={label}>Mínimo de membros *</span>
+              <input
+                type="number"
+                name="equipe_min"
+                min={2}
+                max={10}
+                step={1}
+                required
+                value={equipeMin}
+                onChange={(evento) => setEquipeMin(Number(evento.target.value))}
+                className={input}
+              />
+            </label>
+            <label>
+              <span className={label}>Máximo de membros *</span>
+              <input
+                type="number"
+                name="equipe_max"
+                min={2}
+                max={10}
+                step={1}
+                required
+                value={equipeMax}
+                onChange={(evento) => setEquipeMax(Number(evento.target.value))}
+                aria-describedby="ajuda-equipe-tamanho"
+                className={input}
+              />
+            </label>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-deep/10 bg-canvas/60 p-4 sm:col-span-2">
+              <input
+                type="checkbox"
+                name="exige_orientador"
+                value="true"
+                checked={exigeOrientador}
+                onChange={(evento) =>
+                  setExigeOrientador(evento.target.checked)
+                }
+                className="mt-0.5 h-4 w-4 rounded border-deep/30 accent-brick focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+              />
+              <span className="text-sm leading-relaxed text-ink">
+                <span className="block font-semibold text-deep">
+                  Exigir professor orientador
+                </span>
+                Quem cria a equipe informa nome e e-mail do orientador.
+              </span>
+            </label>
+
+            <p
+              id="ajuda-equipe-tamanho"
+              role={tamanhoInvalido ? "alert" : undefined}
+              className={`sm:col-span-2 text-xs leading-relaxed ${
+                tamanhoInvalido ? "font-medium text-molten" : "text-muted"
+              }`}
+            >
+              {tamanhoInvalido
+                ? "O mínimo de membros não pode ser maior que o máximo."
+                : "Entre 2 e 10 membros por equipe."}
+            </p>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="rounded-2xl border border-deep/10 bg-white p-5 shadow-sm sm:p-6">
+        <div>
+          <h2 className="font-display text-lg font-semibold text-deep">
             Assinaturas do certificado
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-muted">
@@ -473,7 +581,7 @@ export function FormularioEvento({
         >
           Cancelar
         </a>
-        <button type="submit" disabled={pendente} className="inline-flex h-11 items-center justify-center rounded-full bg-deep px-5 text-sm font-semibold text-papaya transition-colors hover:bg-navy-800 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-deep">
+        <button type="submit" disabled={pendente || tamanhoInvalido} className="inline-flex h-11 items-center justify-center rounded-full bg-deep px-5 text-sm font-semibold text-papaya transition-colors hover:bg-navy-800 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-deep">
           {pendente
             ? "Salvando…"
             : valoresIniciais

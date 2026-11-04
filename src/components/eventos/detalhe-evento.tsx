@@ -37,6 +37,7 @@ import { buscarEventoPublicado } from "@/lib/eventos";
 import { siteUrl } from "@/lib/env";
 import { mensagemDoEvento } from "@/components/eventos/compartilhar-utils";
 import { contarFilaEspera, obterContextoEvento } from "@/lib/inscricoes/consultas";
+import { obterMinhaEquipeNoEvento } from "@/lib/equipes/consultas";
 import { expirarConvitesNaVisita } from "@/lib/convites/expiracao";
 import { estiloTemaEvento, obterTemaEvento } from "@/lib/tema-evento";
 import type {
@@ -164,6 +165,10 @@ export async function DetalheEvento({
   if (!evento) notFound();
 
   const contexto = await obterContextoEvento(evento.id);
+  const minhaEquipe =
+    evento.permiteEquipes && contexto.autenticado
+      ? await obterMinhaEquipeNoEvento(evento.id)
+      : null;
   const filaEspera = await contarFilaEspera(evento.id);
   const agora = new Date();
   const situacao = situacaoInscricao(evento, agora);
@@ -461,12 +466,79 @@ export async function DetalheEvento({
                   </dl>
 
                   <div className="tema-inscricao mt-6 border-t border-line pt-6">
-                    {!realizado &&
-                    (situacao === "aberta" ||
-                      situacao === "lotado" ||
-                      contexto.inscricao?.status === "confirmada" ||
-                      contexto.inscricao?.status === "lista_espera" ||
-                      contexto.inscricao?.status === "aguardando_confirmacao") ? (
+                    {evento.permiteEquipes && !realizado ? (
+                      <div className="space-y-3">
+                        <p className="rounded-xl border border-brick/30 bg-papaya px-4 py-3 text-xs leading-relaxed text-molten">
+                          <span className="block text-sm font-semibold">
+                            Inscrição em equipe
+                          </span>
+                          Monte um grupo de {evento.equipeMin} a{" "}
+                          {evento.equipeMax} pessoas
+                          {evento.exigeOrientador
+                            ? " com um professor orientador"
+                            : ""}
+                          . Cada membro garante a própria vaga.
+                        </p>
+
+                        {minhaEquipe ? (
+                          <div className="rounded-xl border border-deep/15 bg-white px-4 py-3">
+                            <p className="text-sm font-semibold text-deep">
+                              Sua equipe: {minhaEquipe.nome}
+                            </p>
+                            <p className="mt-1 text-xs text-muted">
+                              {minhaEquipe.membros.length} membro(s) ·{" "}
+                              {minhaEquipe.souLider
+                                ? "você é o líder"
+                                : "você é membro"}
+                            </p>
+                            <ButtonLink
+                              href={`/equipes/${minhaEquipe.codigo}`}
+                              variante="contorno"
+                              className="mt-3 w-full"
+                            >
+                              Ver minha equipe
+                            </ButtonLink>
+                          </div>
+                        ) : situacao === "aberta" || situacao === "lotado" ? (
+                          <>
+                            <ButtonLink
+                              href={
+                                contexto.autenticado
+                                  ? `/eventos/${evento.id}/equipe`
+                                  : `/entrar?next=${encodeURIComponent(`/eventos/${evento.id}/equipe`)}`
+                              }
+                              className="w-full"
+                            >
+                              {contexto.autenticado
+                                ? "Criar equipe"
+                                : "Entrar para criar sua equipe"}
+                            </ButtonLink>
+                            <ButtonLink
+                              href="/equipes"
+                              variante="contorno"
+                              className="w-full"
+                            >
+                              Entrar com código
+                            </ButtonLink>
+                          </>
+                        ) : (
+                          <span className="flex h-12 w-full items-center justify-center rounded-full bg-deep/[0.06] px-4 text-sm font-semibold text-muted">
+                            {ROTULOS_SITUACAO[situacao]}
+                          </span>
+                        )}
+
+                        <p className="text-center text-xs leading-relaxed text-muted">
+                          {contexto.autenticado
+                            ? "Sua vaga é pessoal e a equipe precisa atingir o mínimo de membros para ser confirmada."
+                            : "A inscrição em equipe exige uma conta no Partiu DPM."}
+                        </p>
+                      </div>
+                    ) : !realizado &&
+                      (situacao === "aberta" ||
+                        situacao === "lotado" ||
+                        contexto.inscricao?.status === "confirmada" ||
+                        contexto.inscricao?.status === "lista_espera" ||
+                        contexto.inscricao?.status === "aguardando_confirmacao") ? (
                       <AcoesInscricao
                         eventoId={evento.id}
                         situacao={situacao}

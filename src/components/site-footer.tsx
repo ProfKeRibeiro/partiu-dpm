@@ -11,6 +11,8 @@ const ANO_ATUAL = new Date().getFullYear();
 const navegacao = [
   { href: "/eventos", rotulo: "Eventos" },
   { href: "/#como-funciona", rotulo: "Como funciona" },
+  { href: "/termos", rotulo: "Termos de uso" },
+  { href: "/privacidade", rotulo: "Privacidade" },
 ];
 
 const acesso = [

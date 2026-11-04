@@ -340,7 +340,7 @@ export const listarEventosPublicados = cache(
       if (error) throw error;
 
       const eventos = (data ?? [])
-        .map((registro) => mapearEvento(registro as Record<string, unknown>))
+        .map((registro) => mapearEvento(registro as unknown as Record<string, unknown>))
         .filter(
           (evento): evento is Evento =>
             evento !== null && evento.status === "publicado",
@@ -383,7 +383,7 @@ export const buscarEventoPublicado = cache(
       if (error) throw error;
 
       const evento = data
-        ? mapearEvento(data as Record<string, unknown>)
+        ? mapearEvento(data as unknown as Record<string, unknown>)
         : null;
 
       if (!evento || evento.status !== "publicado") {

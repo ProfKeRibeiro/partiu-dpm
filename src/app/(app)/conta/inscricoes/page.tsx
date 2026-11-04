@@ -20,6 +20,8 @@ import {
   IconeRelogio,
 } from "@/components/ui/icons";
 import { obterUsuario } from "@/lib/auth/sessao";
+import { CartaoEquipe } from "@/components/equipes/cartao-equipe";
+import { listarMinhasEquipes } from "@/lib/equipes/consultas";
 import { ROTULOS_MODALIDADE } from "@/lib/evento-utils";
 import { formatarDataCurta, formatarPeriodo, partesDaData } from "@/lib/format";
 import {
@@ -120,6 +122,7 @@ async function ListaInscricoes({
   const params = await searchParams;
   const filtro = filtroValido(params.status);
   const inscricoes = await listarMinhasInscricoes();
+  const minhasEquipes = await listarMinhasEquipes();
   const agora = new Date();
   const agoraMs = agora.getTime();
 
@@ -155,6 +158,27 @@ async function ListaInscricoes({
 
   return (
     <div className="space-y-6">
+      {minhasEquipes.length > 0 ? (
+        <section aria-labelledby="minhas-equipes" className="space-y-3">
+          <h2
+            id="minhas-equipes"
+            className="font-display text-lg font-semibold text-deep"
+          >
+            Minhas equipes
+          </h2>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {minhasEquipes.map((equipe) => (
+              <CartaoEquipe
+                key={equipe.id}
+                equipe={equipe}
+                eventoTitulo={equipe.eventoTitulo}
+                eventoId={equipe.eventoId}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <div className="flex flex-wrap gap-1.5 rounded-2xl border border-deep/10 bg-white p-1.5 shadow-sm">
         {ABAS.map((aba) => {
           const ativa = filtro === aba.valor;

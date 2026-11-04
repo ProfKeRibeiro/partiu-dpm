@@ -32,6 +32,10 @@ function evento(alteracoes: Partial<Evento> = {}): Evento {
     status: "publicado",
     imagemUrl: null,
     corTema: null,
+    permiteEquipes: false,
+    equipeMin: 2,
+    equipeMax: 10,
+    exigeOrientador: true,
     ...alteracoes,
   };
 }
