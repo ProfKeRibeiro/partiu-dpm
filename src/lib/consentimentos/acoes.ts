@@ -73,6 +73,19 @@ export async function registrarAceiteTermos(
   return { ok: true, mensagem: "Aceite dos termos registrado." };
 }
 
+/**
+ * Ação de formulário do banner de re-aceite (`useActionState`).
+ */
+export async function aceitarTermosAction(): Promise<EstadoConsentimento> {
+  const resultado = await registrarAceiteTermos();
+
+  revalidatePath("/conta");
+  revalidatePath("/conta/perfil");
+  revalidatePath("/admin");
+
+  return resultado;
+}
+
 /** Verifica se o usuário logado aceitou a versão vigente dos termos. */
 export async function verificarAceiteTermos(
   versao: string = VERSAO_TERMOS,

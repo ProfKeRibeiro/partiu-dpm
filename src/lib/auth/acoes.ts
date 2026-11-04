@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CURSOS_DISPONIVEIS } from "@/lib/cursos";
 import { destinoSeguroInterno } from "@/lib/rota-segura";
 import { senhaVazada } from "@/lib/auth/senha-vazada";
+import { emailDeAlunoEtec } from "@/lib/dominios";
 import {
   criarConsentimentoMenor,
   registrarAceiteTermos,
@@ -119,11 +120,12 @@ export async function criarConta(
   const curso = texto(formData, "curso");
   const destino = destinoSeguroInterno(formData.get("next"));
   const aceiteTermos = texto(formData, "aceite_termos").toLowerCase();
-  const menorIdade = texto(formData, "menor_idade").toLowerCase() === "true";
-  const emailResponsavel = texto(
-    formData,
-    "email_responsavel",
-  ).toLowerCase();
+  const alunoEtec = emailDeAlunoEtec(email);
+  const menorIdade =
+    !alunoEtec && texto(formData, "menor_idade").toLowerCase() === "true";
+  const emailResponsavel = alunoEtec
+    ? ""
+    : texto(formData, "email_responsavel").toLowerCase();
 
   if (aceiteTermos !== "true" && aceiteTermos !== "on") {
     return {

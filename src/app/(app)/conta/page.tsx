@@ -8,7 +8,9 @@ import { CartaoEventoApp } from "@/components/app/cartao-evento";
 import { EstadoVazio, AvisoApp } from "@/components/app/estados";
 import { HeroParticipante } from "@/components/app/hero-participante";
 import { AvisoConsentimento } from "@/components/consentimentos/aviso-consentimento";
+import { BannerTermos } from "@/components/consentimentos/banner-termos";
 import { obterConsentimentoMenor } from "@/lib/consentimentos/consultas";
+import { verificarAceiteTermos } from "@/lib/consentimentos/acoes";
 import { ProximoEventoItem } from "@/components/app/proximo-evento";
 import { ButtonLink } from "@/components/ui/button-link";
 import {
@@ -47,12 +49,14 @@ async function Painel() {
     return <AcessoRestrito variante="sessao" destinoLogin="/conta" />;
   }
 
-  const [perfil, inscricoes, agenda, consentimento] = await Promise.all([
-    obterPerfil(),
-    listarMinhasInscricoes(),
-    listarEventosPublicados(),
-    obterConsentimentoMenor(),
-  ]);
+  const [perfil, inscricoes, agenda, consentimento, termosAceitos] =
+    await Promise.all([
+      obterPerfil(),
+      listarMinhasInscricoes(),
+      listarEventosPublicados(),
+      obterConsentimentoMenor(),
+      verificarAceiteTermos(),
+    ]);
 
   const nome = perfil?.nome_completo ?? usuario.nome ?? "participante";
   const agora = new Date();
@@ -89,6 +93,12 @@ async function Painel() {
       <HeroParticipante nome={primeiroNome(nome)} />
 
       <AppContainer className="py-7 sm:py-9">
+        {!termosAceitos ? (
+          <div className="mb-6">
+            <BannerTermos />
+          </div>
+        ) : null}
+
         {consentimento && consentimento.status !== "aceito" ? (
           <div className="mb-6">
             <AvisoConsentimento consentimento={consentimento} />

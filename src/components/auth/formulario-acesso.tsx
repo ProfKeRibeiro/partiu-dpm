@@ -6,6 +6,7 @@ import { useActionState } from "react";
 import { criarConta, entrar, type EstadoAuth } from "@/lib/auth/acoes";
 import { AvisoFormulario } from "@/components/ui/aviso-formulario";
 import { atributosDeErro, camposDoErro } from "@/components/auth/campos-com-erro";
+import { emailDeAlunoEtec } from "@/lib/dominios";
 import { CURSOS_DISPONIVEIS } from "@/lib/cursos";
 
 const campo =
@@ -33,10 +34,12 @@ export function FormularioAcesso({
     "aluno",
   );
   const [aceite, setAceite] = useState(false);
+  const [email, setEmail] = useState("");
   const [menorIdade, setMenorIdade] = useState(false);
   const [emailResponsavel, setEmailResponsavel] = useState("");
   const [erroLocal, setErroLocal] = useState("");
   const alertaRef = useRef<HTMLParagraphElement>(null);
+  const alunoEtec = emailDeAlunoEtec(email);
   const erros = camposDoErro(estado?.erro);
   const ID_ERRO = "erro-acesso";
 
@@ -57,6 +60,7 @@ export function FormularioAcesso({
         }
 
         if (
+          !alunoEtec &&
           menorIdade &&
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailResponsavel.trim())
         ) {
@@ -155,6 +159,11 @@ export function FormularioAcesso({
           type="email"
           autoComplete="email"
           required
+          value={email}
+          onChange={(evento) => {
+            setEmail(evento.target.value);
+            setErroLocal("");
+          }}
           {...atributosDeErro(
             erros,
             "email",
@@ -250,29 +259,38 @@ export function FormularioAcesso({
             </span>
           </label>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-deep/10 bg-canvas/60 p-3">
-            <input
-              type="checkbox"
-              name="menor_idade"
-              value="true"
-              checked={menorIdade}
-              onChange={(evento) => {
-                setMenorIdade(evento.target.checked);
-                setErroLocal("");
-              }}
-              aria-describedby="ajuda-menor"
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-deep/30 accent-brick focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
-            />
-            <span id="ajuda-menor" className="text-xs leading-relaxed text-ink">
-              <span className="block font-semibold text-deep">
-                Tenho menos de 18 anos
+          {!alunoEtec ? (
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-deep/10 bg-canvas/60 p-3">
+              <input
+                type="checkbox"
+                name="menor_idade"
+                value="true"
+                checked={menorIdade}
+                onChange={(evento) => {
+                  setMenorIdade(evento.target.checked);
+                  setErroLocal("");
+                }}
+                aria-describedby="ajuda-menor"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-deep/30 accent-brick focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
+              />
+              <span
+                id="ajuda-menor"
+                className="text-xs leading-relaxed text-ink"
+              >
+                <span className="block font-semibold text-deep">
+                  Tenho menos de 18 anos
+                </span>
+                A conta só será validada depois que o responsável autorizar pelo
+                link enviado a ele.
               </span>
-              A conta só será validada depois que o responsável autorizar pelo
-              link enviado a ele.
-            </span>
-          </label>
+            </label>
+          ) : (
+            <p className="rounded-xl border border-steel-300 bg-steel-50 px-3 py-2 text-xs leading-relaxed text-deep">
+              Aluno da Etec DPM: não é necessário consentimento de responsável.
+            </p>
+          )}
 
-          {menorIdade ? (
+          {!alunoEtec && menorIdade ? (
             <div>
               <label htmlFor="email_responsavel" className={rotulo}>
                 E-mail do responsável
