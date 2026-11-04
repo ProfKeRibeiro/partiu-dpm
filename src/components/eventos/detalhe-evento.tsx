@@ -38,6 +38,7 @@ import { siteUrl } from "@/lib/env";
 import { mensagemDoEvento } from "@/components/eventos/compartilhar-utils";
 import { contarFilaEspera, obterContextoEvento } from "@/lib/inscricoes/consultas";
 import { obterMinhaEquipeNoEvento } from "@/lib/equipes/consultas";
+import { obterSorteioPublicoDoEvento } from "@/lib/sorteios/consultas";
 import { expirarConvitesNaVisita } from "@/lib/convites/expiracao";
 import { estiloTemaEvento, obterTemaEvento } from "@/lib/tema-evento";
 import type {
@@ -169,6 +170,7 @@ export async function DetalheEvento({
     evento.permiteEquipes && contexto.autenticado
       ? await obterMinhaEquipeNoEvento(evento.id)
       : null;
+  const sorteioPublico = await obterSorteioPublicoDoEvento(evento.id);
   const filaEspera = await contarFilaEspera(evento.id);
   const agora = new Date();
   const situacao = situacaoInscricao(evento, agora);
@@ -339,6 +341,25 @@ export async function DetalheEvento({
                   </div>
                 </dl>
               </Secao>
+
+              {sorteioPublico ? (
+                <Secao titulo="Sorteio">
+                  <p className="text-sm leading-relaxed text-ink">
+                    {sorteioPublico.status === "realizado"
+                      ? "O sorteio deste evento já foi realizado. Veja os vencedores na página do resultado."
+                      : "Cadastre-se no sorteio do evento. O resultado é público e auditável."}
+                  </p>
+                  <ButtonLink
+                    href={`/sorteios/${sorteioPublico.id}`}
+                    variante="contorno"
+                    className="mt-4 w-full sm:w-auto"
+                  >
+                    {sorteioPublico.status === "realizado"
+                      ? "Ver resultado do sorteio"
+                      : "Participar do sorteio"}
+                  </ButtonLink>
+                </Secao>
+              ) : null}
 
               {evento.tipo === "feira" || evento.publicoAlvo === "externo" ? (
                 <Secao titulo="Participação de escolas">

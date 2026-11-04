@@ -32,6 +32,12 @@ import { usuarioEhAdmin, usuarioPodeOrganizar, obterUsuario } from "@/lib/auth/s
 import { listarEquipesDoEvento } from "@/lib/equipes/consultas";
 import { listarEscolasDoEvento } from "@/lib/escolas/consultas";
 import { EscolasDoEvento } from "@/components/admin/escolas-evento";
+import { SorteioDoEvento } from "@/components/admin/sorteio-evento";
+import {
+  consultarResultadoSorteio,
+  listarParticipantesSorteio,
+  obterSorteioDoEvento,
+} from "@/lib/sorteios/consultas";
 import { rotuloPainel } from "@/lib/app-utils";
 import { isSupabaseConfigured } from "@/lib/env";
 import { formatarDataCurta, formatarDataHora, formatarPeriodo } from "@/lib/format";
@@ -144,6 +150,13 @@ async function AdminEventoConteudo({
   const convocacoes = await listarConvocacoesAdmin(evento.id);
   const equipesDoEvento = await listarEquipesDoEvento(evento.id);
   const escolas = await listarEscolasDoEvento(evento.id);
+  const sorteio = await obterSorteioDoEvento(evento.id);
+  const participantesSorteio = sorteio
+    ? await listarParticipantesSorteio(sorteio.id)
+    : [];
+  const resultadoSorteio = sorteio
+    ? await consultarResultadoSorteio(sorteio.id)
+    : null;
   const usuarioAtual = await obterUsuario();
   const podeInscreverEscola = /@cps\.sp\.gov\.br$/i.test(
     usuarioAtual?.email ?? "",
@@ -568,6 +581,13 @@ async function AdminEventoConteudo({
               </div>
             )}
           </section>
+
+          <SorteioDoEvento
+            eventoId={evento.id}
+            sorteio={sorteio}
+            participantes={participantesSorteio}
+            vencedores={resultadoSorteio?.vencedores ?? []}
+          />
 
           {mostrarEscolas ? (
             <EscolasDoEvento
