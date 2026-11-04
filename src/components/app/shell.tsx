@@ -12,6 +12,7 @@ export function AppShell({
   email,
   avatarUrl,
   admin,
+  administrador = false,
   notificacoes,
   listaNotificacoes,
   children,
@@ -20,6 +21,7 @@ export function AppShell({
   email: string | null;
   avatarUrl: string | null;
   admin: boolean;
+  administrador?: boolean;
   notificacoes: number;
   listaNotificacoes: Notificacao[];
   children: ReactNode;
@@ -36,7 +38,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-canvas">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[272px] border-r border-deep/20 lg:block">
-        <Sidebar admin={admin} />
+        <Sidebar admin={admin} administrador={administrador} />
       </aside>
 
       <div className="flex min-h-screen flex-col lg:pl-[272px]">
@@ -45,6 +47,7 @@ export function AppShell({
           email={email}
           avatarUrl={avatarUrl}
           admin={admin}
+          administrador={administrador}
           notificacoes={notificacoes}
           listaNotificacoes={listaNotificacoes}
           onAbrirMenu={() => setMenuAberto(true)}
@@ -72,6 +75,7 @@ export function AppShell({
           >
             <Sidebar
               admin={admin}
+              administrador={administrador}
               contextoDrawer
               onNavigate={() => setMenuAberto(false)}
             />

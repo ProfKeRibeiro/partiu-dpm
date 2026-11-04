@@ -28,7 +28,8 @@ import {
   obterEventoAdmin,
   obterEventoParaEdicao,
 } from "@/lib/admin/consultas";
-import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
+import { usuarioEhAdmin, usuarioPodeOrganizar } from "@/lib/auth/sessao";
+import { rotuloPainel } from "@/lib/app-utils";
 import { isSupabaseConfigured } from "@/lib/env";
 import { formatarDataCurta, formatarDataHora, formatarPeriodo } from "@/lib/format";
 
@@ -123,6 +124,7 @@ async function AdminEventoConteudo({
   }
 
   const { id } = await params;
+  const administrador = await usuarioEhAdmin();
 
   if (!REGEX_UUID.test(id)) notFound();
 
@@ -170,7 +172,7 @@ async function AdminEventoConteudo({
               href="/admin"
               className="transition-colors hover:text-brick focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
             >
-              Administração
+              {rotuloPainel(administrador)}
             </Link>
             <span aria-hidden="true">/</span>
             <span className="text-deep">Inscrições</span>

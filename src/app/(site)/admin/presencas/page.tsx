@@ -11,7 +11,8 @@ import {
   IconeUsuarios,
 } from "@/components/ui/icons";
 import { listarEventosAdmin } from "@/lib/admin/consultas";
-import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
+import { usuarioEhAdmin, usuarioPodeOrganizar } from "@/lib/auth/sessao";
+import { rotuloPainel } from "@/lib/app-utils";
 import { isSupabaseConfigured } from "@/lib/env";
 import { formatarDataCurta, formatarHorario } from "@/lib/format";
 
@@ -45,6 +46,7 @@ export default async function PresencasAdminPage() {
     return <AcessoRestrito variante="admin" destinoLogin="/admin/presencas" />;
   }
 
+  const administrador = await usuarioEhAdmin();
   const eventos = await listarEventosAdmin();
 
   return (
@@ -57,14 +59,14 @@ export default async function PresencasAdminPage() {
             className="flex items-center gap-2 text-xs text-muted"
           >
             <Link href="/admin" className="hover:text-brick">
-              Administração
+              {rotuloPainel(administrador)}
             </Link>
             <span aria-hidden="true">/</span>
             <span className="text-deep">Presenças</span>
           </nav>
           <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-steel-300 bg-white/70 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-deep">
             <IconeCheck className="h-3.5 w-3.5 text-steel-700" />
-            Administração
+            {rotuloPainel(administrador)}
           </p>
           <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-deep sm:text-4xl">
             Confirmar presenças

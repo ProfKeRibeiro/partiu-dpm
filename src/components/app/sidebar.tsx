@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoMark } from "@/components/brand/logo";
+import { rotuloPainel } from "@/lib/app-utils";
 import {
   IconeBilhete,
   IconeCalendario,
@@ -35,11 +36,13 @@ function estaAtivo(pathname: string, href: string) {
 
 export function Sidebar({
   admin,
+  administrador = false,
   onNavigate,
   className = "",
   contextoDrawer = false,
 }: {
   admin: boolean;
+  administrador?: boolean;
   onNavigate?: () => void;
   className?: string;
   /** No drawer mobile o foco é programático, então o anel precisa aparecer. */
@@ -113,7 +116,7 @@ export function Sidebar({
             className="flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-papaya/75 transition-colors hover:bg-papaya/[0.08] hover:text-papaya focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-papaya"
           >
             <IconeEscudo className="h-5 w-5 shrink-0 text-steel-300" />
-            <span className="truncate">Administração</span>
+            <span className="truncate">{rotuloPainel(administrador)}</span>
             <span className="ml-auto rounded-full border border-papaya/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wider text-papaya/60">
               Restrito
             </span>

@@ -5,7 +5,8 @@ import { AcessoRestrito } from "@/components/auth/acesso-restrito";
 import { FormularioEvento } from "@/components/admin/formulario-evento";
 import { Container } from "@/components/ui/container";
 import { obterEventoParaEdicao } from "@/lib/admin/consultas";
-import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
+import { usuarioEhAdmin, usuarioPodeOrganizar } from "@/lib/auth/sessao";
+import { rotuloPainel } from "@/lib/app-utils";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export const metadata: Metadata = {
@@ -72,6 +73,8 @@ export default async function EditarEventoPage({
     );
   }
 
+  const administrador = await usuarioEhAdmin();
+
   return (
     <main className="flex-1 bg-canvas py-10 sm:py-14">
       <Container className="max-w-4xl">
@@ -80,7 +83,7 @@ export default async function EditarEventoPage({
           className="flex flex-wrap items-center gap-2 text-xs text-muted"
         >
           <Link href="/admin" className="transition-colors hover:text-brick">
-            Administração
+            {rotuloPainel(administrador)}
           </Link>
           <span>/</span>
           <Link

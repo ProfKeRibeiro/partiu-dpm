@@ -13,13 +13,14 @@ import {
   IconeSetaDireita,
   IconeUsuarios,
 } from "@/components/ui/icons";
-import { usuarioPodeOrganizar } from "@/lib/auth/sessao";
+import { usuarioEhAdmin, usuarioPodeOrganizar } from "@/lib/auth/sessao";
 import { listarEventosAdmin } from "@/lib/admin/consultas";
+import { rotuloPainel } from "@/lib/app-utils";
 import { formatarDataCurta, formatarHorario } from "@/lib/format";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export const metadata: Metadata = {
-  title: "Painel administrativo",
+  title: "Painel",
   robots: { index: false, follow: false },
 };
 
@@ -65,6 +66,7 @@ export default async function AdminPage() {
     return <AcessoRestrito variante="admin" destinoLogin="/admin" />;
   }
 
+  const administrador = await usuarioEhAdmin();
   const eventos = await listarEventosAdmin();
   const publicados = eventos.filter(
     (evento) => evento.status === "publicado",
@@ -99,7 +101,7 @@ export default async function AdminPage() {
               Minha área
             </Link>
             <span aria-hidden="true">/</span>
-            <span className="text-deep">Administração</span>
+            <span className="text-deep">{rotuloPainel(administrador)}</span>
           </nav>
 
           <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -109,7 +111,7 @@ export default async function AdminPage() {
                 Área restrita
               </p>
               <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-deep sm:text-4xl">
-                Painel administrativo
+                {administrador ? "Painel administrativo" : "Painel da organização"}
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink">
                 Gerencie inscrições, presenças e certificados dos eventos da DPM.

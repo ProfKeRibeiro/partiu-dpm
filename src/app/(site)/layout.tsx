@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 import {
   obterPerfil,
   obterUsuario,
+  usuarioEhAdmin,
   usuarioPodeOrganizar,
 } from "@/lib/auth/sessao";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -32,9 +33,13 @@ async function CabecalhoComSessao() {
   }
 
   const usuario = await obterUsuario();
-  const [perfil, admin] = usuario
-    ? await Promise.all([obterPerfil(), usuarioPodeOrganizar()])
-    : [null, false];
+  const [perfil, admin, administrador] = usuario
+    ? await Promise.all([
+        obterPerfil(),
+        usuarioPodeOrganizar(),
+        usuarioEhAdmin(),
+      ])
+    : [null, false, false];
 
   return (
     <SiteHeader
@@ -42,6 +47,7 @@ async function CabecalhoComSessao() {
       nome={perfil?.nome_completo ?? usuario?.nome ?? null}
       avatarUrl={usuario?.avatarUrl ?? null}
       admin={admin}
+      administrador={administrador}
     />
   );
 }

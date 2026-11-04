@@ -16,6 +16,7 @@ import {
   IconeSino,
 } from "@/components/ui/icons";
 import { sair } from "@/lib/auth/acoes";
+import { rotuloPainel } from "@/lib/app-utils";
 import { formatarDataHora } from "@/lib/format";
 import {
   marcarNotificacaoLida,
@@ -28,6 +29,7 @@ export function Topbar({
   email,
   avatarUrl,
   admin = false,
+  administrador = false,
   notificacoes,
   listaNotificacoes,
   onAbrirMenu,
@@ -36,6 +38,7 @@ export function Topbar({
   email: string | null;
   avatarUrl?: string | null;
   admin?: boolean;
+  administrador?: boolean;
   notificacoes: number;
   listaNotificacoes: Notificacao[];
   onAbrirMenu: () => void;
@@ -359,7 +362,7 @@ export function Topbar({
                       className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-papaya/60 hover:text-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
                     >
                       <IconeEscudo className="h-4 w-4 text-molten" />
-                      Administração
+                      {rotuloPainel(administrador)}
                     </Link>
                   ) : null}
                 </div>

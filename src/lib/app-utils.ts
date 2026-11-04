@@ -33,6 +33,14 @@ export function rotuloCategoria(categoria: string | null | undefined) {
   return ROTULOS_CATEGORIA[categoria] ?? "Participante";
 }
 
+/**
+ * Nome do painel conforme o papel: administradores veem "Administração";
+ * organizadores (domínio cps.sp.gov.br, sem admin) veem "Organização".
+ */
+export function rotuloPainel(administrador: boolean) {
+  return administrador ? "Administração" : "Organização";
+}
+
 export function faixaHorario(
   inicio: string | null | undefined,
   fim: string | null | undefined,

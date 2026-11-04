@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import { sair } from "@/lib/auth/acoes";
+import { rotuloPainel } from "@/lib/app-utils";
 import { Avatar } from "@/components/ui/avatar";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
@@ -28,12 +29,15 @@ export function SiteHeader({
   nome,
   avatarUrl,
   admin = false,
+  administrador = false,
 }: {
   estadoSessao: "carregando" | "autenticado" | "anonimo";
   nome?: string | null;
   avatarUrl?: string | null;
   admin?: boolean;
+  administrador?: boolean;
 }) {
+  const rotuloPainelAtual = rotuloPainel(administrador);
   const [aberto, setAberto] = useState(false);
   const [menuContaAberto, setMenuContaAberto] = useState(false);
   const menuContaRef = useRef<HTMLDivElement>(null);
@@ -162,7 +166,7 @@ export function SiteHeader({
                       className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-papaya/60 hover:text-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
                     >
                       <IconeEscudo className="h-4 w-4 text-steel-700" />
-                      Administração
+                      {rotuloPainelAtual}
                     </Link>
                   ) : null}
                   <form action={sair} className="mt-1 border-t border-line pt-1">
@@ -261,7 +265,7 @@ export function SiteHeader({
                       onClick={() => setAberto(false)}
                     >
                       <IconeEscudo className="h-4 w-4" />
-                      Administração
+                      {rotuloPainelAtual}
                     </ButtonLink>
                   ) : null}
                   <form action={sair}>

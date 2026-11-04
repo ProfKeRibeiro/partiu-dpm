@@ -7,6 +7,7 @@ import { ShellCarregando } from "@/components/app/estados";
 import {
   obterPerfil,
   obterUsuario,
+  usuarioEhAdmin,
   usuarioPodeOrganizar,
 } from "@/lib/auth/sessao";
 import { expirarConvitesNaVisita } from "@/lib/convites/expiracao";
@@ -59,9 +60,10 @@ async function SessaoApp({ children }: { children: ReactNode }) {
     return <AcessoRestrito variante="sessao" destinoLogin="/conta" />;
   }
 
-  const [perfil, admin, notificacoes] = await Promise.all([
+  const [perfil, admin, administrador, notificacoes] = await Promise.all([
     obterPerfil(),
     usuarioPodeOrganizar(),
+    usuarioEhAdmin(),
     listarNotificacoes(),
   ]);
 
@@ -73,6 +75,7 @@ async function SessaoApp({ children }: { children: ReactNode }) {
       email={usuario.email}
       avatarUrl={usuario.avatarUrl}
       admin={admin}
+      administrador={administrador}
       notificacoes={notificacoes.naoLidas}
       listaNotificacoes={notificacoes.itens}
     >
