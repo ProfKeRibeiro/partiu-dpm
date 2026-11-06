@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { enviarEmailConsentimentoMenor, enviarEmailReaceiteTermos } from "@/lib/consentimentos/emails";
 import { dadosDaRequisicao } from "@/lib/consentimentos/requisicao";
 import { VERSAO_TERMOS } from "@/lib/consentimentos/termos";
+import { whatsappValido } from "@/lib/whatsapp";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -90,6 +91,7 @@ const MOTIVOS: Record<string, string> = {
   token_invalido: "Link inválido.",
   ja_respondido: "Este link já foi respondido.",
   expirado: "Este link expirou. Peça um novo à pessoa responsável pelo cadastro.",
+  telefone_invalido: "Informe um WhatsApp válido no formato (DD) 9XXXX-XXXX.",
 };
 
 function mensagem(motivo: string | undefined) {
@@ -184,9 +186,19 @@ export async function criarConsentimentoMenor(
   const emailResponsavel = String(
     formData.get("email_responsavel") ?? "",
   ).trim();
+  const telefoneResponsavel =
+    String(formData.get("telefone_responsavel") ?? "").trim() || null;
+
+  if (telefoneResponsavel && !whatsappValido(telefoneResponsavel)) {
+    return { ok: false, mensagem: mensagem("telefone_invalido") };
+  }
 
   if (inscricaoId && !REGEX_UUID.test(inscricaoId)) {
     return { ok: false, mensagem: "Inscrição inválida." };
+  }
+
+  if (telefoneResponsavel && !whatsappValido(telefoneResponsavel)) {
+    return { ok: false, mensagem: mensagem("telefone_invalido") };
   }
 
   const { ip, userAgent } = await dadosDaRequisicao();
@@ -196,6 +208,7 @@ export async function criarConsentimentoMenor(
     p_versao_termo: VERSAO_TERMOS,
     p_ip: ip,
     p_user_agent: userAgent,
+    p_telefone_responsavel: telefoneResponsavel,
   });
 
   if (error) {
@@ -209,6 +222,8 @@ export async function criarConsentimentoMenor(
     token?: string;
     email_responsavel?: string;
     ja_autorizado?: boolean;
+    consentimento_id?: string | null;
+    telefone_responsavel?: string | null;
   };
 
   if (resultado.ok !== true) {

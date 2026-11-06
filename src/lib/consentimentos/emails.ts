@@ -1,6 +1,9 @@
 import "server-only";
 
 import { enviarEmail } from "@/lib/email/enviar";
+import { enviarConsentimentoWhatsApp } from "@/lib/whatsapp/enviar";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { siteUrl } from "@/lib/env";
 
 function escapar(valor: string) {
@@ -17,6 +20,8 @@ export async function enviarEmailConsentimentoMenor(params: {
   nomeTitular: string;
   eventoTitulo: string | null;
   token: string;
+  telefoneResponsavel?: string | null;
+  consentimentoId?: string | null;
 }) {
   const linkAceitar = `${siteUrl}/consentimento/${params.token}?decisao=aceitar`;
   const linkRecusar = `${siteUrl}/consentimento/${params.token}?decisao=recusar`;
@@ -68,6 +73,39 @@ export async function enviarEmailConsentimentoMenor(params: {
       resultado.motivo,
       resultado.motivo === "falha" ? resultado.erro : "",
     );
+  }
+
+  // Canal WhatsApp: envia o link de aceite (?decisao=aceitar) quando houver
+  // telefone do responsável; o e-mail continua como registro/fallback.
+  if (params.consentimentoId && params.telefoneResponsavel) {
+    // O cliente admin é necessário porque o fluxo da escola é anônimo (sem
+    // sessão) e a marcação do envio não pode depender de RLS do usuário.
+    const supabase =
+      createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+    const { data: consent } = await supabase
+      .from("consentimentos")
+      .select("whatsapp_enviado_em")
+      .eq("id", params.consentimentoId)
+      .maybeSingle();
+
+    if (consent?.whatsapp_enviado_em == null) {
+      const envio = await enviarConsentimentoWhatsApp({
+        para: params.telefoneResponsavel,
+        nomeTitular: params.nomeTitular,
+        token: params.token,
+      });
+
+      if (envio.ok) {
+        const { error } = await supabase
+          .from("consentimentos")
+          .update({ whatsapp_enviado_em: new Date().toISOString() })
+          .eq("id", params.consentimentoId);
+
+        if (error) {
+          console.error("[partiu-dpm] Falha ao marcar envio WhatsApp.", error);
+        }
+      }
+    }
   }
 }
 

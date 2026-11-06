@@ -6,6 +6,7 @@ import {
   type EstadoConsentimento,
 } from "@/lib/consentimentos/acoes";
 import { AvisoFormulario } from "@/components/ui/aviso-formulario";
+import { CampoWhatsApp } from "@/components/whatsapp/campo-whatsapp";
 import type { ConsentimentoMenor } from "@/lib/consentimentos/consultas";
 
 /**
@@ -66,31 +67,34 @@ export function AvisoConsentimento({
         />
 
         {trocando ? (
-          <form action={acao} className="flex flex-col gap-2 sm:flex-row">
-            <label
-              htmlFor="email-responsavel-aviso"
-              className="min-w-0 flex-1 text-xs font-semibold text-deep"
-            >
-              E-mail do responsável
-              <input
-                id="email-responsavel-aviso"
-                name="email_responsavel"
-                type="email"
-                required
-                value={email}
-                onChange={(evento) => setEmail(evento.target.value)}
-                autoComplete="off"
-                className="mt-1 w-full rounded-xl border border-deep/15 bg-white px-3 py-2.5 text-sm text-deep outline-none focus:border-brick focus:ring-4 focus:ring-brick/10"
-                placeholder="responsavel@exemplo.com"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={pendente}
-              className="h-11 shrink-0 self-end rounded-full bg-deep px-4 text-xs font-semibold text-papaya transition-colors hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-deep disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {pendente ? "Enviando..." : "Enviar pedido"}
-            </button>
+          <form action={acao} className="mt-4 flex flex-col gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <label
+                htmlFor="email-responsavel-aviso"
+                className="min-w-0 flex-1 text-xs font-semibold text-deep"
+              >
+                E-mail do responsável
+                <input
+                  id="email-responsavel-aviso"
+                  name="email_responsavel"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(evento) => setEmail(evento.target.value)}
+                  autoComplete="off"
+                  className="mt-1 w-full rounded-xl border border-deep/15 bg-white px-3 py-2.5 text-sm text-deep outline-none focus:border-brick focus:ring-4 focus:ring-brick/10"
+                  placeholder="responsavel@exemplo.com"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={pendente}
+                className="h-11 shrink-0 self-end rounded-full bg-deep px-4 text-xs font-semibold text-papaya transition-colors hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-deep disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pendente ? "Enviando..." : "Enviar pedido"}
+              </button>
+            </div>
+            <CampoWhatsApp />
           </form>
         ) : (
           <div className="flex flex-wrap items-center gap-2">

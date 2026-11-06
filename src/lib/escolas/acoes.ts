@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { dadosDaRequisicao } from "@/lib/consentimentos/requisicao";
 import { VERSAO_TERMOS } from "@/lib/consentimentos/termos";
 import { enviarEmailConsentimentoMenor } from "@/lib/consentimentos/emails";
+import { whatsappValido } from "@/lib/whatsapp";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -99,15 +100,21 @@ export async function criarInscricaoEscola(
  *
  * Não exige conta: o aluno informa nome/e-mail e o e-mail do responsável. O
  * consentimento fica pendente até o aceite no link enviado ao responsável.
+ * O WhatsApp do responsável é opcional e prepara o envio do link por lá.
  */
 export async function inscreverAlunoEscola(formData: FormData) {
   const codigo = texto(formData, "codigo");
   const nome = texto(formData, "nome");
   const email = texto(formData, "email");
   const emailResponsavel = texto(formData, "email_responsavel");
+  const telefoneResponsavel = texto(formData, "telefone_responsavel");
 
   if (!codigo) {
     redirect("/escolas/invalido");
+  }
+
+  if (telefoneResponsavel && !whatsappValido(telefoneResponsavel)) {
+    redirect(`/escolas/${encodeURIComponent(codigo)}?erro=telefone_invalido`);
   }
 
   const { ip, userAgent } = await dadosDaRequisicao();
@@ -117,6 +124,7 @@ export async function inscreverAlunoEscola(formData: FormData) {
     p_nome: nome,
     p_email: email,
     p_email_responsavel: emailResponsavel,
+    p_telefone_responsavel: telefoneResponsavel || null,
     p_versao_termo: VERSAO_TERMOS,
     p_ip: ip,
     p_user_agent: userAgent,
@@ -134,6 +142,8 @@ export async function inscreverAlunoEscola(formData: FormData) {
     autorizado?: boolean;
     interno?: boolean;
     email_responsavel?: string;
+    telefone_responsavel?: string | null;
+    consentimento_id?: string | null;
   };
 
   if (resultado.ok !== true || !resultado.token) {
@@ -162,6 +172,9 @@ export async function inscreverAlunoEscola(formData: FormData) {
       nomeTitular: nome,
       eventoTitulo,
       token,
+      telefoneResponsavel:
+        resultado.telefone_responsavel ?? telefoneResponsavel ?? null,
+      consentimentoId: resultado.consentimento_id ?? null,
     }),
   );
 

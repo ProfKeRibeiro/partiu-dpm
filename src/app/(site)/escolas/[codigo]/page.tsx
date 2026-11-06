@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { inscreverAlunoEscola } from "@/lib/escolas/acoes";
 import { consultarEscolaPorCodigo } from "@/lib/escolas/consultas";
+import { CampoWhatsApp } from "@/components/whatsapp/campo-whatsapp";
 import { Container } from "@/components/ui/container";
 import { formatarDataHora } from "@/lib/format";
 
@@ -18,6 +19,7 @@ const ERROS: Record<string, string> = {
   nome_invalido: "Informe o nome do aluno (3 a 120 caracteres).",
   email_invalido: "Informe um e-mail válido para o aluno.",
   email_responsavel_invalido: "Informe um e-mail válido para o responsável.",
+  telefone_invalido: "Informe um WhatsApp válido no formato (DD) 9XXXX-XXXX.",
   inscricoes_encerradas: "As inscrições deste evento estão encerradas.",
   erro: "Não foi possível concluir a subinscrição. Tente novamente.",
 };
@@ -140,6 +142,7 @@ export default async function EscolaPage({
                     A inscrição fica pendente até a resposta.
                   </p>
                 </div>
+                <CampoWhatsApp />
                 <button
                   type="submit"
                   className="inline-flex h-11 w-full items-center justify-center rounded-full bg-brick px-5 text-sm font-semibold text-white transition-colors hover:bg-molten focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick"
