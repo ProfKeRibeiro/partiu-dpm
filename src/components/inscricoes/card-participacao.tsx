@@ -157,7 +157,8 @@ export function CardParticipacao({
               id="card-participacao-descricao"
               className="mt-1 text-xs leading-relaxed text-muted"
             >
-              Card 1080x1920 com a sua foto para o story do Instagram.
+              Card 1080x1920 pronto para o story do Instagram. Compartilhe ou
+              baixe a imagem.
             </p>
           </div>
           <button

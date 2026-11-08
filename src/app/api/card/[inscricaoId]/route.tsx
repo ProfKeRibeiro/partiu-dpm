@@ -5,6 +5,7 @@ import { urlAvatarAssinada } from "@/lib/avatar-assinado";
 import {
   ALTURA_CARD,
   LARGURA_CARD,
+  carregarCamadasCard,
   carregarFontesCard,
   criarElementoCard,
 } from "@/lib/card/card";
@@ -48,7 +49,7 @@ export async function GET(
 
   const { data: evento } = await supabase
     .from("eventos")
-    .select("titulo")
+    .select("titulo, tipo")
     .eq("id", inscricao.evento_id)
     .maybeSingle();
 
@@ -100,9 +101,11 @@ export async function GET(
   }
 
   const elemento = criarElementoCard({
+    tipoEvento: (evento?.tipo as string | undefined) ?? null,
     titulo: (evento?.titulo as string | undefined) ?? "Evento",
     nome: (participante?.nome_completo as string | undefined) ?? "",
     avatarDataUri,
+    camadas: await carregarCamadasCard(),
   });
 
   try {

@@ -73,6 +73,7 @@ const nextConfig: NextConfig = {
       "./assets/certificado_partiu-dpm.webp",
       "./assets/fontes/**/*",
     ],
+    "/api/card/**": ["./assets/card/**/*", "./assets/fontes/**/*"],
   },
   async headers() {
     return [
