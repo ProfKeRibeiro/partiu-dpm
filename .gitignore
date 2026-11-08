@@ -43,3 +43,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# artefato de redirecionamento no PowerShell
+null

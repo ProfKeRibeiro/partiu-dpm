@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useActionState } from "react";
-import { IconeAlerta, IconeCheck, IconeSetaDiagonal } from "@/components/ui/icons";
+import { IconeAlerta, IconeCheck, IconeInstagram, IconeSetaDiagonal } from "@/components/ui/icons";
 import { useDialogoAcessivel } from "@/components/ui/use-dialogo";
+import { CardParticipacao } from "@/components/inscricoes/card-participacao";
 import { formatarDataHora } from "@/lib/format";
 import {
   cancelarInscricao,
@@ -53,6 +54,7 @@ export function AcoesInscricao({
   const [estadoConvite, acaoResponderConvite, respondendoConvite] =
     useActionState<EstadoInscricao, FormData>(responderConvite, null);
   const [modalCancelamento, setModalCancelamento] = useState(false);
+  const [cardAberto, setCardAberto] = useState(false);
   const formCancelar = useRef<HTMLFormElement>(null);
   const painelModal = useRef<HTMLDivElement>(null);
 
@@ -113,6 +115,15 @@ export function AcoesInscricao({
             <IconeSetaDiagonal className="h-4 w-4" />
           </a>
         ) : null}
+
+        <button
+          type="button"
+          onClick={() => setCardAberto(true)}
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-deep/20 bg-white px-4 text-sm font-semibold text-deep transition-colors hover:border-deep/35 hover:bg-papaya focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+        >
+          <IconeInstagram className="h-4 w-4" aria-hidden="true" />
+          Compartilhar no Instagram
+        </button>
 
         {!eventoIniciado ? (
           <>
@@ -201,6 +212,12 @@ export function AcoesInscricao({
             {mensagem.mensagem}
           </p>
         ) : null}
+
+        <CardParticipacao
+          inscricaoId={inscricao.id}
+          aberto={cardAberto}
+          onFechar={() => setCardAberto(false)}
+        />
       </div>
     );
   }

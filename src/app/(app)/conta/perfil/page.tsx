@@ -6,6 +6,7 @@ import { AcessoRestrito } from "@/components/auth/acesso-restrito";
 import { FormularioPerfil } from "@/components/auth/formulario-perfil";
 import { FormularioFotoPerfil } from "@/components/auth/formulario-foto-perfil";
 import { FormularioSenha } from "@/components/auth/formulario-senha";
+import { AutorizacaoImagem } from "@/components/conta/autorizacao-imagem";
 import { CabecalhoApp } from "@/components/app/cabecalho";
 import { AppContainer } from "@/components/app/container";
 import { Avatar } from "@/components/ui/avatar";
@@ -127,6 +128,8 @@ async function Perfil() {
               linkedin_url: perfil?.linkedin_url ?? null,
             }}
           />
+
+          <AutorizacaoImagem autorizado={perfil?.autoriza_imagem === true} />
         </div>
       </section>
 

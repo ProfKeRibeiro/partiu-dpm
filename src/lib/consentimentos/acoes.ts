@@ -323,3 +323,45 @@ export async function responderConsentimento(formData: FormData) {
     `/consentimento/${token}?resposta=${resultado.status ?? "aceito"}`,
   );
 }
+
+/**
+ * Registra o aceite/revogação do próprio usuário para uso da imagem no card de
+ * participação (LGPD). O card só é gerado com autorização explícita.
+ */
+export async function registrarAutorizacaoImagem(
+  formData: FormData,
+): Promise<EstadoConsentimento> {
+  const supabase = await createSupabaseServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+
+  if (!userData.user) {
+    return { ok: false, mensagem: mensagem("nao_autenticado") };
+  }
+
+  const autoriza = formData.get("autoriza") === "true";
+
+  const { data, error } = await supabase.rpc("registrar_autorizacao_imagem", {
+    p_autoriza: autoriza,
+  });
+
+  if (error) {
+    console.error("[partiu-dpm] Falha ao registrar autorização de imagem.", error);
+    return { ok: false, mensagem: mensagem(undefined) };
+  }
+
+  const resultado = (data ?? {}) as { ok?: boolean; motivo?: string };
+
+  if (resultado.ok !== true) {
+    return { ok: false, mensagem: mensagem(resultado.motivo) };
+  }
+
+  revalidatePath("/certificados");
+  revalidatePath("/conta/perfil");
+
+  return {
+    ok: true,
+    mensagem: autoriza
+      ? "Autorização para uso da imagem registrada."
+      : "Autorização para uso da imagem revogada.",
+  };
+}

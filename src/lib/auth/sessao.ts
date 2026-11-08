@@ -46,6 +46,7 @@ export type Perfil = {
   instituicao: string | null;
   categoria: "aluno" | "externo" | "servidor" | "outro";
   linkedin_url: string | null;
+  autoriza_imagem: boolean;
 };
 
 export const obterUsuario = cacheReact(async (): Promise<Usuario | null> => {
@@ -83,7 +84,7 @@ export const obterPerfil = cacheReact(async (): Promise<Perfil | null> => {
   const { data, error } = await supabase
     .from("participantes")
     .select(
-      "id, nome_completo, curso, ano_serie, instituicao, categoria, linkedin_url",
+      "id, nome_completo, curso, ano_serie, instituicao, categoria, linkedin_url, autoriza_imagem",
     )
     .eq("id", usuario.id)
     .maybeSingle();
