@@ -12,6 +12,7 @@ import {
 } from "@/components/app/estados";
 import { LogoMark } from "@/components/brand/logo";
 import { ButtonLink } from "@/components/ui/button-link";
+import { AutorizacaoImagem } from "@/components/conta/autorizacao-imagem";
 import {
   IconeCertificado,
   IconeEscudo,
@@ -104,6 +105,8 @@ async function ListaCertificados() {
           disso, o certificado é emitido com um código de validação pública e
           fica disponível nesta página.
         </AvisoApp>
+
+        <AutorizacaoImagem autorizado={perfil?.autoriza_imagem === true} />
       </div>
     );
   }
@@ -121,6 +124,8 @@ async function ListaCertificados() {
           {nome} · {usuario.email}
         </p>
       </div>
+
+      <AutorizacaoImagem autorizado={perfil?.autoriza_imagem === true} />
 
       <div className="grid gap-5 lg:grid-cols-2">
         {certificados.map((inscricao) => {
