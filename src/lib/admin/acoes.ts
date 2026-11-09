@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -57,7 +57,7 @@ export async function definirPresenca(formData: FormData) {
   });
 
   if (error) {
-    console.error("[partiu-dpm] Falha ao registrar presenÃ§a.", error);
+    console.error("[partiu-dpm] Falha ao registrar presença.", error);
   }
 
   const resultado = (data ?? {}) as { ok?: boolean };
@@ -105,7 +105,7 @@ export async function emitirCertificado(formData: FormData) {
 }
 
 /**
- * Reenvia o e-mail do certificado jÃ¡ emitido â€” Ãºtil quando o envio falhou ou a
+ * Reenvia o e-mail do certificado já emitido — útil quando o envio falhou ou a
  * pessoa perdeu a mensagem.
  */
 export async function reenviarAvisoCertificado(formData: FormData) {
@@ -174,7 +174,7 @@ export async function definirStatusInscricao(formData: FormData) {
   );
 
   if (error) {
-    console.error("[partiu-dpm] Falha ao alterar status da inscriÃ§Ã£o.", error);
+    console.error("[partiu-dpm] Falha ao alterar status da inscrição.", error);
   }
 
   const anteriorStatus = (anterior?.status as string | undefined) ?? null;

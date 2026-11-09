@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -65,8 +65,8 @@ export function AcoesInscricao({
     painelRef: painelModal,
   });
 
-  /* Abre o card automaticamente assim que a inscriÃ§Ã£o Ã© confirmada, para a
-   * pessoa poder compartilhar no story do Instagram sem procurar o botÃ£o. */
+  /* Abre o card automaticamente assim que a inscrição é confirmada, para a
+   * pessoa poder compartilhar no story do Instagram sem procurar o botão. */
   const inscricaoRecemConfirmada =
     estadoInscricao?.ok === true &&
     estadoInscricao.codigo === "inscrito" &&
@@ -97,8 +97,8 @@ export function AcoesInscricao({
         </Link>
         <p className="mt-3 text-center text-xs leading-relaxed text-muted">
           {podeListaEspera
-            ? "As vagas estÃ£o preenchidas. Entre para entrar na lista de espera e ser avisado se uma vaga abrir."
-            : "A inscriÃ§Ã£o exige uma conta no Partiu DPM."}
+            ? "As vagas estão preenchidas. Entre para entrar na lista de espera e ser avisado se uma vaga abrir."
+            : "A inscrição exige uma conta no Partiu DPM."}
         </p>
       </div>
     );
@@ -110,12 +110,12 @@ export function AcoesInscricao({
         <div className="rounded-xl border border-deep/15 bg-papaya px-4 py-3">
           <p className="inline-flex items-center gap-2 text-sm font-semibold text-deep">
             <IconeCheck className="h-4 w-4 text-brick" />
-            InscriÃ§Ã£o confirmada
+            Inscrição confirmada
           </p>
           <p className="mt-1 text-xs leading-relaxed text-ink">
             {eventoIniciado
-              ? "Este evento jÃ¡ comeÃ§ou. Bom proveito!"
-              : "Guarde este comprovante. VocÃª pode cancelar atÃ© o inÃ­cio do evento."}
+              ? "Este evento já começou. Bom proveito!"
+              : "Guarde este comprovante. Você pode cancelar até o início do evento."}
           </p>
         </div>
 
@@ -155,7 +155,7 @@ export function AcoesInscricao({
                 }
                 className="inline-flex h-10 w-full items-center justify-center rounded-full border border-brick/40 px-4 text-xs font-semibold text-brick transition-colors hover:bg-ember-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {cancelando ? "Cancelando..." : "Cancelar inscriÃ§Ã£o"}
+                {cancelando ? "Cancelando..." : "Cancelar inscrição"}
               </button>
             </form>
 
@@ -179,14 +179,14 @@ export function AcoesInscricao({
                     id="titulo-cancelar-inscricao"
                     className="font-display text-lg font-semibold tracking-tight text-deep"
                   >
-                    Cancelar sua inscriÃ§Ã£o?
+                    Cancelar sua inscrição?
                   </h2>
                   <p
                     id="texto-cancelar-inscricao"
                     className="mt-2 text-sm leading-relaxed text-muted"
                   >
-                    Este evento estÃ¡ com lista de espera. Ao confirmar, sua vaga
-                    vai automaticamente para a prÃ³xima pessoa da fila, que serÃ¡
+                    Este evento está com lista de espera. Ao confirmar, sua vaga
+                    vai automaticamente para a próxima pessoa da fila, que será
                     inscrita e avisada por e-mail e pelo sino do portal.
                   </p>
                   <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -205,7 +205,7 @@ export function AcoesInscricao({
                       }}
                       className="inline-flex h-10 items-center justify-center rounded-full bg-brick px-4 text-xs font-semibold text-white transition-colors hover:bg-molten focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
                     >
-                      Sim, cancelar inscriÃ§Ã£o
+                      Sim, cancelar inscrição
                     </button>
                   </div>
                 </div>
@@ -243,14 +243,14 @@ export function AcoesInscricao({
         <div className="rounded-xl border border-brick bg-ember-50 px-4 py-3">
           <p className="inline-flex items-center gap-2 text-sm font-semibold text-molten">
             <IconeAlerta className="h-4 w-4" />
-            Vaga reservada para vocÃª
+            Vaga reservada para você
           </p>
           <p className="mt-1 text-xs leading-relaxed text-ink">
             Abriu uma vaga!
             {conviteExpiraEm
-              ? ` Confirme atÃ© ${formatarDataHora(conviteExpiraEm)}.`
-              : " Confirme sua participaÃ§Ã£o."}{" "}
-            Se o prazo passar, a vaga vai automaticamente para a prÃ³xima pessoa
+              ? ` Confirme até ${formatarDataHora(conviteExpiraEm)}.`
+              : " Confirme sua participação."}{" "}
+            Se o prazo passar, a vaga vai automaticamente para a próxima pessoa
             da lista de espera.
           </p>
         </div>
@@ -279,7 +279,7 @@ export function AcoesInscricao({
               disabled={respondendoConvite}
               className="inline-flex h-11 w-full items-center justify-center rounded-full border border-deep/20 bg-white px-4 text-xs font-semibold text-deep transition-colors hover:bg-papaya focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:cursor-not-allowed disabled:opacity-60"
             >
-              NÃ£o vou poder ir
+              Não vou poder ir
             </button>
           </form>
         </div>
@@ -305,13 +305,13 @@ export function AcoesInscricao({
     return (
       <div className="space-y-2 rounded-xl border border-brick/30 bg-papaya px-4 py-3 text-sm leading-relaxed text-molten">
         <p className="font-semibold">
-          VocÃª estÃ¡ na lista de espera
-          {posicaoFila ? ` â€” ${posicaoFila}Âº da fila` : ""}.
+          Você está na lista de espera
+          {posicaoFila ? ` — ${posicaoFila}º da fila` : ""}.
         </p>
         <p className="text-xs leading-relaxed text-ink">
-          Se uma vaga abrir, vocÃª recebe um e-mail e um aviso no sino do portal
+          Se uma vaga abrir, você recebe um e-mail e um aviso no sino do portal
           com um prazo para confirmar (24 horas, ou 6 horas se o evento estiver
-          prÃ³ximo). Se o prazo passar sem confirmaÃ§Ã£o, a vaga vai para a prÃ³xima
+          próximo). Se o prazo passar sem confirmação, a vaga vai para a próxima
           pessoa da fila.
         </p>
       </div>
@@ -333,21 +333,21 @@ export function AcoesInscricao({
             ? "Registrando..."
             : podeListaEspera
               ? "Entrar na lista de espera"
-              : "Confirmar inscriÃ§Ã£o"}
+              : "Confirmar inscrição"}
           <IconeCheck className="h-4 w-4" />
         </button>
       </form>
 
       {podeListaEspera ? (
         <p className="mt-2 text-center text-xs leading-relaxed text-muted">
-          As vagas estÃ£o preenchidas. Na lista de espera, vocÃª Ã© avisado por
+          As vagas estão preenchidas. Na lista de espera, você é avisado por
           e-mail se uma vaga for liberada.
         </p>
       ) : null}
 
       {inscricao?.status === "cancelada" ? (
         <p className="mt-2 text-center text-xs text-muted">
-          Sua inscriÃ§Ã£o anterior foi cancelada. VocÃª pode se inscrever novamente.
+          Sua inscrição anterior foi cancelada. Você pode se inscrever novamente.
         </p>
       ) : null}
 
