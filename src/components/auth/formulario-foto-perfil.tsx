@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -36,39 +36,14 @@ export function FormularioFotoPerfil({
 }) {
   const router = useRouter();
   const [fotoAtual, setFotoAtual] = useState(avatarUrl);
-  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [caminhoAtual, setCaminhoAtual] = useState(avatarPath);
+  const [previa, setPrevia] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
-  const [pendente, setPendente] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
-  function selecionarArquivo(evento: ChangeEvent<HTMLInputElement>) {
-    setArquivo(evento.target.files?.[0] ?? null);
-    setErro(null);
-    setMensagem(null);
-  }
-
-  async function enviarFoto(evento: FormEvent<HTMLFormElement>) {
-    evento.preventDefault();
-    setErro(null);
-    setMensagem(null);
-
-    if (!arquivo) {
-      setErro("Escolha uma foto antes de enviar.");
-      return;
-    }
-
-    const extensao = extensoes[arquivo.type];
-    if (!extensao) {
-      setErro("Use uma imagem JPG, PNG ou WebP.");
-      return;
-    }
-
-    if (arquivo.size > MAX_BYTES) {
-      setErro("A foto deve ter no máximo 5 MB.");
-      return;
-    }
-
-    setPendente(true);
+  async function enviarFoto(arquivo: File, extensao: string) {
+    setEnviando(true);
 
     try {
       const supabase = createSupabaseBrowserClient();
@@ -107,31 +82,72 @@ export function FormularioFotoPerfil({
         return;
       }
 
-      const avatarAntigo = avatarPath ?? caminhoAvatar(fotoAtual, usuarioId);
+      const avatarAntigo = caminhoAtual ?? caminhoAvatar(fotoAtual, usuarioId);
       if (avatarAntigo && avatarAntigo !== caminho) {
         await bucket.remove([avatarAntigo]);
       }
 
       setFotoAtual(url ?? fotoAtual);
-      setArquivo(null);
+      setCaminhoAtual(caminho);
       setMensagem("Foto de perfil atualizada.");
       router.refresh();
     } catch {
-      setErro("Não foi possível enviar a foto. Confira sua conexão e tente novamente.");
+      setErro(
+        "Não foi possível enviar a foto. Confira sua conexão e tente novamente.",
+      );
     } finally {
-      setPendente(false);
+      setEnviando(false);
     }
   }
+
+  async function selecionarArquivo(evento: ChangeEvent<HTMLInputElement>) {
+    const arquivo = evento.target.files?.[0] ?? null;
+
+    // Permite escolher o mesmo arquivo de novo depois de um erro.
+    evento.target.value = "";
+
+    setErro(null);
+    setMensagem(null);
+
+    if (!arquivo) return;
+
+    const extensao = extensoes[arquivo.type];
+
+    if (!extensao) {
+      setErro("Use uma imagem JPG, PNG ou WebP.");
+      return;
+    }
+
+    if (arquivo.size > MAX_BYTES) {
+      setErro("A foto deve ter no máximo 5 MB.");
+      return;
+    }
+
+    // Mostra a imagem escolhida na hora, antes do envio terminar.
+    const urlLocal = URL.createObjectURL(arquivo);
+    setPrevia(urlLocal);
+
+    try {
+      await enviarFoto(arquivo, extensao);
+    } finally {
+      URL.revokeObjectURL(urlLocal);
+      setPrevia(null);
+    }
+  }
+
+  const temFoto = Boolean(fotoAtual);
 
   return (
     <section aria-labelledby="titulo-foto-perfil">
       <div className="flex flex-wrap items-center gap-4">
         <Avatar
-          src={fotoAtual}
+          src={previa ?? fotoAtual}
           nome={nome}
           tamanho={56}
           alt={`Foto de perfil de ${nome}`}
-          className="h-14 w-14 ring-2 ring-papaya"
+          className={`h-14 w-14 ring-2 ring-papaya ${
+            enviando ? "opacity-70" : ""
+          }`}
         />
         <div className="min-w-0 flex-1">
           <h3
@@ -141,49 +157,49 @@ export function FormularioFotoPerfil({
             Foto de perfil
           </h3>
           <p className="mt-1 text-xs leading-relaxed text-muted">
-            JPG, PNG ou WebP, até 5 MB.
+            {enviando
+              ? "Enviando sua foto…"
+              : temFoto
+                ? "Escolha outra imagem a qualquer momento. JPG, PNG ou WebP, até 5 MB."
+                : "JPG, PNG ou WebP, até 5 MB. A foto é salva assim que você escolhe o arquivo."}
           </p>
         </div>
       </div>
 
-      <form onSubmit={enviarFoto} className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <label
           htmlFor="arquivo-foto-perfil"
           className="inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-deep/20 bg-white px-4 text-sm font-semibold text-deep transition-colors hover:bg-papaya/60 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brick"
         >
-          Escolher foto
+          {enviando ? "Enviando…" : temFoto ? "Trocar foto" : "Escolher foto"}
           <input
             id="arquivo-foto-perfil"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={selecionarArquivo}
+            disabled={enviando}
             className="sr-only"
           />
         </label>
-        {arquivo ? (
-          <span className="max-w-full truncate text-xs text-muted">
-            {arquivo.name}
-          </span>
-        ) : null}
-        <button
-          type="submit"
-          disabled={pendente || !arquivo}
-          className="inline-flex h-10 items-center justify-center rounded-full bg-brick px-4 text-sm font-semibold text-white transition-colors hover:bg-molten focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {pendente ? "Enviando…" : "Atualizar foto"}
-        </button>
-      </form>
+        <p className="text-xs text-muted">
+          Não precisa clicar em salvar: a troca é automática.
+        </p>
+      </div>
 
       {erro ? (
         <p role="alert" className="mt-3 text-sm text-molten">
           {erro}
         </p>
       ) : null}
-      {mensagem ? (
-        <p role="status" className="mt-3 text-sm text-steel-700">
-          {mensagem}
-        </p>
-      ) : null}
+      <p
+        role="status"
+        aria-live="polite"
+        className={`mt-3 text-sm text-steel-700 ${
+          enviando || mensagem ? "" : "sr-only"
+        }`}
+      >
+        {enviando ? "Salvando sua nova foto…" : mensagem}
+      </p>
     </section>
   );
 }

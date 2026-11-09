@@ -60,6 +60,36 @@ function mensagem(codigo: string) {
   return MENSAGENS[codigo] ?? "Não foi possível concluir. Tente novamente.";
 }
 
+/**
+ * Quando a inscrição é recusada por curso ou série, distingue "dado ainda não
+ * preenchido" de "dado fora do público do evento": no primeiro caso a pessoa
+ * precisa completar o perfil antes de tentar de novo.
+ */
+async function mensagemIncompativel(
+  supabase: ClienteSupabase,
+  codigo: string,
+  usuarioId: string,
+) {
+  if (codigo !== "curso_incompativel" && codigo !== "serie_incompativel") {
+    return mensagem(codigo);
+  }
+
+  const campo = codigo === "curso_incompativel" ? "curso" : "ano_serie";
+  const { data } = await supabase
+    .from("participantes")
+    .select(campo)
+    .eq("id", usuarioId)
+    .maybeSingle();
+
+  const valor = (data as Record<string, unknown> | null)?.[campo];
+
+  if (typeof valor === "string" && valor.trim()) return mensagem(codigo);
+
+  return codigo === "curso_incompativel"
+    ? "Complete seu curso no perfil para se inscrever neste evento."
+    : "Complete sua série/ano no perfil para se inscrever neste evento.";
+}
+
 function revalidar(eventoId: string | null) {
   revalidatePath("/");
   revalidatePath("/eventos");
@@ -237,13 +267,15 @@ export async function inscreverEmEvento(
 
   revalidar(eventoId);
 
+  const textoFinal =
+    resultado.ok === true && codigo === "lista_espera"
+      ? "Você entrou na lista de espera. Avisaremos se uma vaga for liberada."
+      : await mensagemIncompativel(supabase, codigo, userData.user.id);
+
   return {
     ok: resultado.ok === true,
     codigo,
-    mensagem:
-      resultado.ok === true && codigo === "lista_espera"
-        ? "Você entrou na lista de espera. Avisaremos se uma vaga for liberada."
-        : mensagem(codigo),
+    mensagem: textoFinal,
     inscricaoId: resultado.inscricao_id ?? null,
   };
 }

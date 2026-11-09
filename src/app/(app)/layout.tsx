@@ -10,6 +10,7 @@ import {
   usuarioEhAdmin,
   usuarioPodeOrganizar,
 } from "@/lib/auth/sessao";
+import { pendenciasCadastro } from "@/lib/auth/perfil-pendencias";
 import { expirarConvitesNaVisita } from "@/lib/convites/expiracao";
 import { isSupabaseConfigured } from "@/lib/env";
 import { listarNotificacoes } from "@/lib/notificacoes/consultas";
@@ -78,6 +79,7 @@ async function SessaoApp({ children }: { children: ReactNode }) {
       administrador={administrador}
       notificacoes={notificacoes.naoLidas}
       listaNotificacoes={notificacoes.itens}
+      pendenciasCadastro={pendenciasCadastro(perfil)}
     >
       {children}
     </AppShell>

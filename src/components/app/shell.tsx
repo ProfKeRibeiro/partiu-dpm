@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
+import { AvisoCadastro } from "@/components/app/aviso-cadastro";
 import { Sidebar } from "@/components/app/sidebar";
 import { Topbar } from "@/components/app/topbar";
 import { IconeFechar } from "@/components/ui/icons";
@@ -15,6 +16,7 @@ export function AppShell({
   administrador = false,
   notificacoes,
   listaNotificacoes,
+  pendenciasCadastro = [],
   children,
 }: {
   nome: string;
@@ -24,6 +26,7 @@ export function AppShell({
   administrador?: boolean;
   notificacoes: number;
   listaNotificacoes: Notificacao[];
+  pendenciasCadastro?: string[];
   children: ReactNode;
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -53,6 +56,7 @@ export function AppShell({
           onAbrirMenu={() => setMenuAberto(true)}
         />
         <main id="conteudo" className="flex-1">
+          <AvisoCadastro pendencias={pendenciasCadastro} />
           {children}
         </main>
       </div>
