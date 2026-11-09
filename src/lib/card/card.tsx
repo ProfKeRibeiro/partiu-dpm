@@ -71,26 +71,44 @@ export function rotuloTipoEvento(tipo: string | null | undefined) {
   return ROTULOS_TIPO[chave] ?? (chave ? chave.toUpperCase() : "EVENTO");
 }
 
-const LARGURA_UTIL_TITULO = 920;
-/** Aproximação da largura média de um caractere da Lora Bold. */
-const FATOR_LARGURA = 0.74;
+/** Largura média de um caractere da Lora Bold, em em. */
+const FATOR_LARGURA = 0.736;
+const LARGURA_MAX_TITULO = 900;
+/** Altura disponível entre o rótulo do tipo e a moldura. */
+const ALTURA_MAX_TITULO = 330;
+const ENTRELINHA = 0.8;
 
-function quebrarTitulo(titulo: string, tamanho: number) {
+/**
+ * Hierarquia de tamanhos da referência: a primeira linha é a menor e a última
+ * a maior (ex.: MONGODB pequeno, DAY bem maior).
+ */
+const FATORES_LINHA: Record<number, number[]> = {
+  1: [1],
+  2: [0.58, 1],
+  3: [0.38, 0.64, 1],
+};
+
+function dividirLinhas(titulo: string) {
   const palavras = titulo.split(/\s+/).filter(Boolean);
+
+  if (palavras.length <= 3) return palavras;
+
+  /* Nomes longos: duas linhas equilibradas por número de caracteres. */
+  const total = palavras.reduce((soma, palavra) => soma + palavra.length, 0);
   const linhas: string[] = [];
   let atual = "";
+  let acumulado = 0;
 
   for (const palavra of palavras) {
-    const teste = atual ? `${atual} ${palavra}` : palavra;
+    const proxima = acumulado + palavra.length;
 
-    if (
-      atual &&
-      teste.length * FATOR_LARGURA * tamanho > LARGURA_UTIL_TITULO
-    ) {
+    if (atual && proxima > total / 2) {
       linhas.push(atual);
       atual = palavra;
+      acumulado = palavra.length;
     } else {
-      atual = teste;
+      atual = atual ? `${atual} ${palavra}` : palavra;
+      acumulado = proxima;
     }
   }
 
@@ -98,25 +116,25 @@ function quebrarTitulo(titulo: string, tamanho: number) {
   return linhas;
 }
 
-/**
- * Escolhe o maior corpo de fonte que mantém o nome do evento em no máximo
- * duas linhas dentro da área do título.
- */
-function dimensionarTitulo(titulo: string) {
-  for (let tamanho = 196; tamanho >= 84; tamanho -= 4) {
-    const linhas = quebrarTitulo(titulo, tamanho);
+/** Calcula corpo de cada linha respeitando largura e altura disponíveis. */
+export function dimensionarTitulo(titulo: string) {
+  const linhas = dividirLinhas(titulo);
+  const fatores = FATORES_LINHA[linhas.length] ?? FATORES_LINHA[3];
+  const somaFatores = fatores.reduce((soma, fator) => soma + fator, 0);
 
-    if (
-      linhas.length <= 2 &&
-      linhas.every(
-        (linha) => linha.length * FATOR_LARGURA * tamanho <= LARGURA_UTIL_TITULO,
-      )
-    ) {
-      return { tamanho, linhas };
-    }
-  }
+  let base = ALTURA_MAX_TITULO / (somaFatores * ENTRELINHA);
 
-  return { tamanho: 84, linhas: quebrarTitulo(titulo, 84) };
+  linhas.forEach((linha, indice) => {
+    const limite = LARGURA_MAX_TITULO / (linha.length * FATOR_LARGURA * fatores[indice]);
+    base = Math.min(base, limite);
+  });
+
+  base = Math.min(base, 250);
+
+  return linhas.map((linha, indice) => ({
+    texto: linha,
+    tamanho: Math.round(base * fatores[indice]),
+  }));
 }
 
 function contorno(espessura: number) {
@@ -130,6 +148,47 @@ function contorno(espessura: number) {
     `-${espessura}px ${espessura}px 0 ${COR_AZUL}`,
     `${espessura}px ${espessura}px 0 ${COR_AZUL}`,
   ].join(", ");
+}
+
+type LetraArco = {
+  caractere: string;
+  esquerda: number;
+  topo: number;
+  largura: number;
+  rotacao: number;
+};
+
+/**
+ * Distribui as letras de "EU VOU!" em arco, como na referência: o centro fica
+ * mais alto e as pontas descem, cada letra girada na tangente do arco.
+ */
+function letrasNoArco(
+  texto: string,
+  fonte: number,
+  raio: number,
+  centroX: number,
+  centroY: number,
+): LetraArco[] {
+  const caracteres = [...texto];
+  const pesos = caracteres.map((c) => (c === " " ? 0.34 : 0.72));
+  const total = pesos.reduce((soma, peso) => soma + peso, 0) * fonte;
+  const abertura = total / raio;
+
+  let cursor = -abertura / 2;
+
+  return caracteres.map((caractere, indice) => {
+    const passo = (pesos[indice] * fonte) / raio;
+    const angulo = cursor + passo / 2;
+    cursor += passo;
+
+    return {
+      caractere,
+      esquerda: centroX + raio * Math.sin(angulo) - (pesos[indice] * fonte) / 2,
+      topo: centroY + raio * (1 - Math.cos(angulo)) - fonte * 0.5,
+      largura: pesos[indice] * fonte,
+      rotacao: (angulo * 180) / Math.PI,
+    };
+  });
 }
 
 /**
@@ -153,7 +212,9 @@ export function criarElementoCard(dados: {
     .map((parte) => parte.charAt(0).toUpperCase())
     .join("");
 
-  const { tamanho, linhas } = dimensionarTitulo(titulo);
+  const linhas = dimensionarTitulo(titulo);
+
+  const euVou = letrasNoArco("EU VOU!", 150, 700, 540, 1200);
 
   return (
     <div
@@ -212,11 +273,7 @@ export function criarElementoCard(dados: {
         width={MOLDURA.width}
         height={MOLDURA.height}
         alt=""
-        style={{
-          position: "absolute",
-          top: MOLDURA.top,
-          left: MOLDURA.left,
-        }}
+        style={{ position: "absolute", top: MOLDURA.top, left: MOLDURA.left }}
       />
 
       {/* Selo oficial Partiu DPM. */}
@@ -233,11 +290,11 @@ export function criarElementoCard(dados: {
         }}
       />
 
-      {/* Rótulo do tipo e nome do evento. */}
+      {/* Rótulo do tipo e nome do evento, com a hierarquia da referência. */}
       <div
         style={{
           position: "absolute",
-          top: 118,
+          top: 132,
           left: 0,
           width: LARGURA_CARD,
           display: "flex",
@@ -245,19 +302,31 @@ export function criarElementoCard(dados: {
           alignItems: "center",
         }}
       >
+        {/* Rótulo alinhado à direita, com o traço embaixo, como na referência. */}
         <div
           style={{
+            width: LARGURA_CARD,
+            paddingRight: 150,
             display: "flex",
-            fontSize: 58,
-            fontWeight: 700,
-            color: COR_CREAM,
-            fontFamily: "Lora",
-            letterSpacing: 4,
-            textShadow: contorno(3),
-            marginBottom: 10,
+            justifyContent: "flex-end",
           }}
         >
-          {rotuloTipoEvento(dados.tipoEvento)}
+          <div
+            style={{
+              display: "flex",
+              fontSize: 56,
+              fontWeight: 700,
+              color: COR_CREAM,
+              fontFamily: "Lora",
+              letterSpacing: 2,
+              lineHeight: 1.05,
+              borderBottom: `5px solid ${COR_CREAM}`,
+              paddingBottom: 6,
+              textShadow: `${contorno(2)}, 5px 6px 0 ${COR_AZUL}`,
+            }}
+          >
+            {rotuloTipoEvento(dados.tipoEvento)}
+          </div>
         </div>
 
         <div
@@ -266,53 +335,62 @@ export function criarElementoCard(dados: {
             flexDirection: "column",
             alignItems: "center",
             width: LARGURA_CARD,
+            marginTop: 6,
           }}
         >
           {linhas.map((linha) => (
             <div
-              key={linha}
+              key={linha.texto}
               style={{
                 display: "flex",
-                fontSize: tamanho,
+                fontSize: linha.tamanho,
                 fontWeight: 700,
                 color: COR_CREAM,
                 fontFamily: "Lora",
-                lineHeight: 0.96,
+                lineHeight: ENTRELINHA,
                 letterSpacing: 2,
-                textShadow: `${contorno(6)}, 12px 14px 0 ${COR_AZUL}`,
+                textShadow: `${contorno(5)}, 16px 20px 0 ${COR_AZUL}`,
               }}
             >
-              {linha}
+              {linha.texto}
             </div>
           ))}
         </div>
       </div>
 
-      {/* "EU VOU!" em Lora sobre a base da foto, como na referência. */}
+      {/* "EU VOU!" arqueado sobre a base da foto. */}
       <div
         style={{
           position: "absolute",
-          top: 1104,
+          top: 0,
           left: 0,
           width: LARGURA_CARD,
+          height: ALTURA_CARD,
           display: "flex",
-          justifyContent: "center",
-          transform: "rotate(-4deg)",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            fontSize: 140,
-            fontWeight: 700,
-            color: COR_CREAM,
-            fontFamily: "Lora",
-            letterSpacing: 2,
-            textShadow: `${contorno(7)}, 10px 12px 0 ${COR_AZUL}`,
-          }}
-        >
-          EU VOU!
-        </div>
+        {euVou.map((letra, indice) => (
+          <div
+            key={`${letra.caractere}-${indice}`}
+            style={{
+              position: "absolute",
+              left: letra.esquerda,
+              top: letra.topo,
+              width: letra.largura,
+              display: "flex",
+              justifyContent: "center",
+              transform: `rotate(${letra.rotacao}deg)`,
+              fontSize: 130,
+              fontWeight: 700,
+              color: COR_CREAM,
+              fontFamily: "Lora",
+              lineHeight: 1,
+              textShadow: `${contorno(6)}, 8px 10px 0 ${COR_AZUL}`,
+            }}
+          >
+            {letra.caractere}
+          </div>
+        ))}
       </div>
     </div>
   );
