@@ -33,6 +33,8 @@ export const FOTO_CARD = {
 };
 
 const LOGO = { largura: 520, top: 1300 };
+/** Corpo das letras do "EU VOU!" em arco. */
+const FONTE_ARCO = 165;
 
 const DIR_ASSETS = path.join(process.cwd(), "assets");
 
@@ -170,7 +172,7 @@ function letrasNoArco(
   centroY: number,
 ): LetraArco[] {
   const caracteres = [...texto];
-  const pesos = caracteres.map((c) => (c === " " ? 0.34 : 0.72));
+  const pesos = caracteres.map((c) => (c === " " ? 0.3 : 0.67));
   const total = pesos.reduce((soma, peso) => soma + peso, 0) * fonte;
   const abertura = total / raio;
 
@@ -214,7 +216,7 @@ export function criarElementoCard(dados: {
 
   const linhas = dimensionarTitulo(titulo);
 
-  const euVou = letrasNoArco("EU VOU!", 150, 700, 540, 1200);
+  const euVou = letrasNoArco("EU VOU!", FONTE_ARCO, 650, 540, 1215);
 
   return (
     <div
@@ -380,7 +382,7 @@ export function criarElementoCard(dados: {
               display: "flex",
               justifyContent: "center",
               transform: `rotate(${letra.rotacao}deg)`,
-              fontSize: 130,
+              fontSize: FONTE_ARCO,
               fontWeight: 700,
               color: COR_CREAM,
               fontFamily: "Lora",
